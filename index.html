@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vacancy Update</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+</head>
+<body class="bg-light p-4">
+    <div class="container bg-white p-4 rounded shadow">
+        <h2 class="text-primary mb-4">📋 ตารางตำแหน่งงานว่าง (Auto-Update)</h2>
+        <table id="myTable" class="table table-striped" style="width:100%">
+            </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <script>
+        // 🔴 วาง Link CSV จาก Google Sheet ตรงนี้
+        const csvLink = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR6GG7VWHL4sIDv_aMEsxM1h0FT-Bp41s7EvugJIsWU_GiIYWLHVkTw1u2b3g0_kfqZpuDhpOmFvIW4/pub?gid=0&single=true&output=csv";
+
+        Papa.parse(csvLink, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                // สร้างตารางอัตโนมัติ
+                if(results.data.length > 0){
+                    let columns = Object.keys(results.data[0]).map(col => ({ title: col, data: col }));
+                    $('#myTable').DataTable({
+                        data: results.data,
+                        columns: columns,
+                        language: { search: "ค้นหา:", lengthMenu: "ดู _MENU_ รายการ" }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
