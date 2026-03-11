@@ -1,193 +1,245 @@
+/**
+ * Serves the HTML file.
+ */
 function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
+  return HtmlService.createTemplateFromFile('index')
       .evaluate()
       .setTitle('Manpower Readiness Dashboard')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+function createHeaderMap(headers) {
+  const map = {};
+  if (!headers) return map;
+  headers.forEach((h, i) => {
+    const key = String(h).toLowerCase().replace(/[\s_.]/g, ''); 
+    map[key] = i;
+  });
+  return map;
+}
+
 function getDashboardData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const result = { targets: [], applicants: [], staff: [], parttime: [], error: false };
   
-  // --- 1. MANPOWER DATA (Master Source for Store Info) ---
-  const qSheet = ss.getSheetByName('Manpower_Status');
-  let targets = [];
-  let storeMap = {}; // Lookup object: StoreNo -> {Area, Format, OD, etc}
-
-  if (qSheet) {
-    const qData = qSheet.getDataRange().getDisplayValues();
-    let h = qData[0];
-    
-    // Default indices based on your CSV structure
-    let cStore=0, cName=1, cFmt=2, cArea=3, cOD=4, cFocus=5, cDept=6, cLevel=7, cTgt=8, cActive=9;
-
-    // specific header mapping to be safe
-    for(let i=0; i<h.length; i++) {
-      let s = String(h[i]).toLowerCase().trim().replace(/ /g, '_'); 
-      if(s.includes('store_no')) cStore=i;
-      if(s.includes('name')) cName=i;
-      if(s.includes('format')) cFmt=i;
-      if(s.includes('area')) cArea=i;
-      if(s.includes('od')) cOD=i;
-      if(s.includes('focus')) cFocus=i; 
-      if(s.includes('department')) cDept=i;
-      if(s.includes('target')) cTgt=i;
-      if(s === 'active' || s.includes('active')) cActive=i; 
-    }
-
-    for (let i = 1; i < qData.length; i++) {
-      let r = qData[i];
-      if (!r[cStore]) continue;
-      
-      let sNo = String(r[cStore]).replace(/\.0$/, "").trim();
-      let storeName = r[cName];
-      let fmt = String(r[cFmt]).trim();
-      let area = String(r[cArea]).trim();
-      let od = String(r[cOD]).trim();
-      let focus = String(r[cFocus]).trim();
-
-      // SAVE STORE INFO TO MAP (This fixes the missing data in other sheets)
-      if (!storeMap[sNo]) {
-        storeMap[sNo] = {
-            name: storeName,
-            format: fmt,
-            area: area,
-            od: od,
-            focus: focus
-        };
+  try {
+    // 1. MANPOWER
+    const qSheet = ss.getSheetByName('Manpower_Status');
+    let storeMap = {}; 
+    if (qSheet) {
+      const data = qSheet.getDataRange().getDisplayValues();
+      const headers = data.shift();
+      const map = createHeaderMap(headers);
+      if (map['storeno'] !== undefined) {
+        data.forEach(r => {
+          if (!r[map['storeno']]) return;
+          let sNo = String(r[map['storeno']]).trim();
+          storeMap[sNo] = { 
+            name: r[map['storename']] || r[map['name']] || '', 
+            format: r[map['format']] || '', 
+            area: r[map['area']] || '', 
+            od: r[map['od']] || '', 
+            focus: r[map['storefocus']] || r[map['focus']] || '' 
+          };
+          let t = parseInt(r[map['target']] || 0, 10);
+          let a = parseInt(r[map['active']] || 0, 10);
+          result.targets.push({
+            storeNo: sNo,
+            storeName: storeMap[sNo].name,
+            format: storeMap[sNo].format,
+            area: storeMap[sNo].area,
+            od: storeMap[sNo].od,
+            storeFocus: storeMap[sNo].focus,
+            dept: r[map['department']] || r[map['dept']] || '',
+            level: r[map['level']] || '', // CAPTURE LEVEL
+            target: isNaN(t) ? 0 : t,
+            active: isNaN(a) ? 0 : a
+          });
+        });
       }
+    }
+
+    // 2. APPLICANTS
+    const appSheet = ss.getSheetByName('Applicant_Tracking');
+    if (appSheet) {
+      const data = appSheet.getDataRange().getDisplayValues();
+      const headers = data.shift();
+      const map = createHeaderMap(headers);
+      const kApply = map['applydate'] !== undefined ? map['applydate'] : map['appdate']; 
+      if (map['storeno'] !== undefined) {
+        data.forEach(r => {
+          let sNo = String(r[map['storeno']]).trim();
+          let meta = storeMap[sNo] || { area: '', format: '' }; 
+          result.applicants.push({
+            applyDate: r[kApply] || '',
+            storeNo: sNo,
+            area: meta.area,
+            format: meta.format,
+            dept: r[map['department']] || '',
+            position: r[map['position']] || '',
+            level: r[map['level']] || '', // CAPTURE LEVEL
+            interviewDate: r[map['interviewdate']] || '',
+            status: r[map['interviewstatus']] || '',
+            startDate: r[map['startdate']] || '',
+            startStatus: r[map['startstatus']] || '',
+            source: r[map['applysource']] || r[map['source']] || ''
+          });
+        });
+      }
+    }
+
+    // 3. STAFF MOVEMENT
+    const sSheet = ss.getSheetByName('Staff_Movement');
+    if (sSheet) {
+      const data = sSheet.getDataRange().getDisplayValues();
+      const headers = data.shift();
+      const map = createHeaderMap(headers);
+      if (map['storeno'] !== undefined) {
+        data.forEach(r => {
+           result.staff.push({
+             storeNo: String(r[map['storeno']]).trim(),
+             dept: r[map['department']] || '',
+             level: r[map['level']] || '', // CAPTURE LEVEL
+             joinDate: r[map['joindate']] || '',
+             termDate: r[map['terminatedate']] || ''
+           });
+        });
+      }
+    }
+
+    // 4. PARTTIME
+    const pSheet = ss.getSheetByName('Parttime');
+    if (pSheet) {
+      const data = pSheet.getDataRange().getDisplayValues();
+      const headers = data.shift();
+      const map = createHeaderMap(headers);
+      const kTotal = map['totalparttime'] !== undefined ? map['totalparttime'] : map['total']; 
+      if (map['date'] !== undefined && map['storeno'] !== undefined) {
+        data.forEach(r => {
+           let ptLevel = r[map['level']];
+           if (!ptLevel || ptLevel === '') ptLevel = 'Temporary'; // Default
+           result.parttime.push({
+             date: r[map['date']],
+             storeNo: String(r[map['storeno']]).trim(),
+             dept: r[map['department']] || '',
+             level: ptLevel,
+             temp: parseFloat(r[map['findtemp']] || 0) || 0,
+             student: parseFloat(r[map['studentparttime']] || r[map['student']] || 0) || 0,
+             elderly: parseFloat(r[map['elderly']] || 0) || 0,
+             total: parseFloat(r[kTotal] || 0) || 0
+           });
+        });
+      }
+    }
+
+  } catch (e) {
+    result.error = true;
+    result.message = e.toString();
+    Logger.log(e);
+  }
+  return result;
+}
+
+function autoSendDailyReportToOutlook() {
+  try {
+    var spreadsheetId = '1Wn1gnstzG_2Wi_Tc95cw0rIC1dIoHJvHbghlxceJy9A'; 
+    var webhookUrl = "https://4d5e96e05cb6e591aefe0bce82117f.8e.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/02f76ccb4ab449dab6c1c7ca9ce3dd0a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ltg01x8lgMKLxv3JIYQL_z5IGtWsLmuUgORuAjojbeY";
+    var emailAddress = "ttanawat@cpaxtra.co.th"; 
+    
+    var file = DriveApp.getFileById(spreadsheetId);
+    var ss = SpreadsheetApp.openById(spreadsheetId);
+    SpreadsheetApp.flush(); 
+    
+    // --- 1. ส่วนสร้างตาราง HTML ---
+    var top10Sheet = ss.getSheetByName('Top 10 of Vacant (30 Stores)');
+    var rawData = top10Sheet.getDataRange().getDisplayValues(); 
+    
+    var htmlTable = "<table style='border-collapse: collapse; width: 80%; font-family: Tahoma, sans-serif; font-size: 14px; border: 1px solid #ddd;' cellpadding='8'>";
+    for (var i = 0; i < rawData.length; i++) {
+        var row = rawData[i];
+        if (row.join("").trim() === "") continue; 
+        
+        htmlTable += "<tr>";
+        for (var j = 0; j < row.length; j++) {
+            if (i === 0) { 
+               htmlTable += "<th style='background-color: #ED1C24; color: white; border: 1px solid #ddd; text-align: center;'>" + row[j] + "</th>";
+            } else { 
+               var align = (j === 0) ? "left" : "center";
+               htmlTable += "<td style='border: 1px solid #ddd; text-align: " + align + ";'>" + row[j] + "</td>";
+            }
+        }
+        htmlTable += "</tr>";
+    }
+    htmlTable += "</table>";
+
+// --- 2. ส่วนคัดแยกเฉพาะ Sheet ที่ต้องการ (เทคนิค Temp File แบบเคลียร์สูตร 100%) ---
+    var sheetsToExport = ['Top 10 of Vacant (30 Stores)', 'Breakdown by Position (30)', 'Breakdown by Position (All)', 'Top 10 of Vacant (All Store)']; 
+    
+    // สร้างไฟล์ชั่วคราว
+    var tempSs = SpreadsheetApp.create("Temp_Export_Report");
+    
+    // วนลูปก๊อปปี้เฉพาะชีตที่ระบุ ไปใส่ในไฟล์ชั่วคราว
+    for (var s = 0; s < sheetsToExport.length; s++) {
+      var originalSheet = ss.getSheetByName(sheetsToExport[s]);
       
-      let tgtVal = parseFloat(r[cTgt]);
-      let actVal = parseFloat(r[cActive]);
-      let t = isNaN(tgtVal) ? 0 : tgtVal;
-      let a = isNaN(actVal) ? 0 : actVal;
-
-      targets.push({
-        storeNo: sNo,
-        storeName: storeName,
-        format: fmt,
-        area: area,
-        od: od,
-        storeFocus: focus,
-        dept: r[cDept],
-        target: t,
-        active: a,
-        gap: t - a
-      });
+      if (originalSheet) {
+        // 2.1 ดึงข้อมูล "ตัวเลข/ข้อความจริงๆ" จากชีตต้นฉบับเตรียมไว้ก่อน
+        var originalRange = originalSheet.getDataRange();
+        var originalValues = originalRange.getValues(); 
+        
+        // 2.2 ก๊อปปี้ชีตไปไฟล์ใหม่ (เพื่อเอาหน้าตา สี เส้นตาราง)
+        var copiedSheet = originalSheet.copyTo(tempSs).setName(sheetsToExport[s]);
+        
+        // 🌟 2.3 [หัวใจสำคัญ] สั่งลบข้อมูลและสูตรที่พังทิ้งทั้งหมด! (แต่สีและ Format จะยังอยู่)
+        copiedSheet.clearContents();
+        
+        // 2.4 นำตัวเลข/ข้อความเพียวๆ ที่ดึงไว้ในข้อ 2.1 ไปหยอดกลับคืน
+        copiedSheet.getRange(1, 1, originalValues.length, originalValues[0].length).setValues(originalValues);
+      }
     }
-  }
-
-  // --- 2. APPLICANT TRACKING (Fixed Missing Columns) ---
-  const appSheet = ss.getSheetByName('Applicant_Tracking');
-  let applicants = [];
-  
-  if (appSheet) {
-    const aData = appSheet.getDataRange().getDisplayValues();
-    let h = aData[0];
-
-    // Corrected Indices for Applicant_Tracking.csv
-    let cApply=0, cStore=1, cName=2, cCand=3, cPhone=4, cPos=5, cComp=6, cDept=7, cSource=8, cInterview=9, cStatus=10, cStartDate=11, cStartStatus=12;
-
-    for(let i=0; i<h.length; i++) {
-      let s = String(h[i]).toLowerCase().trim().replace(/ /g, '_');
-      if(s.includes('store_no')) cStore = i;
-      if(s.includes('department')) cDept = i;
-      if(s.includes('position')) cPos = i;
-      if(s.includes('interview_date')) cInterview = i;
-      if(s.includes('start_date')) cStartDate = i; 
-      if(s.includes('apply_date') || s === 'app_date') cApply = i;
-      if(s.includes('interview_status')) cStatus = i; 
-      if(s.includes('start_status')) cStartStatus = i; 
-      if(s.includes('source')) cSource = i;
-    }
-
-    for (let i = 1; i < aData.length; i++) {
-      let r = aData[i];
-      let sNo = String(r[cStore]).replace(/\.0$/, "").trim();
-      
-      // LOOKUP MISSING INFO from Manpower Map
-      let meta = storeMap[sNo] || { area: 'N/A', format: 'N/A', name: r[cName] || 'N/A' };
-
-      applicants.push({
-        applyDate: r[cApply],
-        storeNo: sNo,
-        area: meta.area,       // Injected from map
-        format: meta.format,   // Injected from map
-        dept: String(r[cDept]).trim(),
-        position: String(r[cPos]).trim(),
-        interviewDate: r[cInterview],
-        status: String(r[cStatus]),
-        startDate: r[cStartDate], 
-        startStatus: String(r[cStartStatus]),
-        source: String(r[cSource]).trim()
-      });
-    }
-  }
-
-  // --- 3. STAFF MOVEMENT ---
-  const sSheet = ss.getSheetByName('Staff_Movement');
-  let staff = [];
-  
-  if (sSheet) {
-    const sData = sSheet.getDataRange().getDisplayValues();
-    let h = sData[0];
     
-    // Corrected Indices for Staff_Movement.csv
-    let cStore=1, cDept=8, cJoin=9, cTerm=10;
+    // ลบหน้า "แผ่นงาน1" (หรือ Sheet1) ที่แถมมาตอนสร้างไฟล์ใหม่ทิ้ง
+    var defaultSheet = tempSs.getSheetByName('แผ่นงาน 1') || tempSs.getSheetByName('Sheet1');
+    if (defaultSheet) { tempSs.deleteSheet(defaultSheet); }
+    // -------------------------------------------------------------------------
     
-    for(let i=0; i<h.length; i++) {
-      let s = String(h[i]).toLowerCase().trim().replace(/ /g, '_');
-      if(s.includes('join_date')) cJoin = i;
-      if(s.includes('terminate_date')) cTerm = i;
-      if(s === 'store_no' || s.includes('store_no')) cStore = i;
-      if(s.includes('department')) cDept = i;
-    }
-
-    for (let i = 1; i < sData.length; i++) {
-      staff.push({ 
-        joinDate: sData[i][cJoin], 
-        termDate: sData[i][cTerm],
-        storeNo: String(sData[i][cStore]).replace(/\.0$/, "").trim(),
-        dept: String(sData[i][cDept]).trim()
-      });
-    }
-  }
-
-  // --- 4. PART-TIME ---
-  const pSheet = ss.getSheetByName('Parttime');
-  let parttime = [];
-  
-  if (pSheet) {
-    const pData = pSheet.getDataRange().getDisplayValues();
-    let h = pData[0];
+    // --- 3. สั่ง Export ไฟล์ชั่วคราวนี้แทน ---
+    var token = ScriptApp.getOAuthToken();
+    var exportUrl = "https://docs.google.com/spreadsheets/d/" + tempSs.getId() + "/export?format=xlsx&access_token=" + token;
+    var response = UrlFetchApp.fetch(exportUrl, { muteHttpExceptions: true });
     
-    let cDate=0, cStore=1, cDept=3, cTemp=4, cStudent=5, cElderly=6, cTotal=7;
-
-    for(let i=0; i<h.length; i++) {
-      let s = String(h[i]).toLowerCase().trim().replace(/ /g, '_');
-      if(s.includes('date')) cDate = i;
-      if(s.includes('store_no')) cStore = i;
-      if(s.includes('department')) cDept = i;
-      if(s.includes('temp')) cTemp = i;
-      if(s.includes('student')) cStudent = i;
-      if(s.includes('elderly')) cElderly = i;
-      if(s.includes('total')) cTotal = i;
+    if(response.getResponseCode() !== 200) {
+      Logger.log("❌ โหลดไฟล์ Excel ไม่สำเร็จ: " + response.getContentText());
+      // สั่งลบไฟล์ชั่วคราวทิ้งเผื่อกรณี Error
+      DriveApp.getFileById(tempSs.getId()).setTrashed(true);
+      return;
     }
 
-    for (let i = 1; i < pData.length; i++) {
-      let r = pData[i];
-      if (!r[cDate] && !r[cStore]) continue;
-
-      parttime.push({
-        date: r[cDate],
-        storeNo: String(r[cStore]).replace(/\.0$/, "").trim(),
-        dept: String(r[cDept]).trim(),
-        temp: parseFloat(r[cTemp]) || 0,
-        student: parseFloat(r[cStudent]) || 0,
-        elderly: parseFloat(r[cElderly]) || 0,
-        total: parseFloat(r[cTotal]) || 0
-      });
-    }
+    var fileBase64 = Utilities.base64Encode(response.getBlob().getBytes());
+    var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd");
+    var fileName = dateStr + "_Top_10_Store_Vacant.xlsx";
+    
+    // 🌟 ส่งไฟล์เสร็จแล้ว ลบไฟล์ชั่วคราวลงถังขยะทันที (สำคัญมาก ไดรฟ์จะได้ไม่เต็ม)
+    DriveApp.getFileById(tempSs.getId()).setTrashed(true);
+    
+    // --- 4. ส่งไป Power Automate ---
+    var payload = {
+      "fileName": fileName,
+      "fileContent": fileBase64,
+      "emailTo": emailAddress,
+      "htmlTable": htmlTable
+    };
+    
+    var options = {
+      "method": "post",
+      "contentType": "application/json",
+      "payload": JSON.stringify(payload)
+    };
+    
+    UrlFetchApp.fetch(webhookUrl, options);
+    Logger.log("✅ ส่งข้อมูลสำเร็จ (คัดเฉพาะ Sheet ที่ระบุ)!");
+    
+  } catch (error) {
+    Logger.log("❌ Error: " + error.message);
   }
-
-  return { targets: targets, applicants: applicants, staff: staff, parttime: parttime, error: false };
 }
