@@ -368,27 +368,34 @@
                                     <div class="d-flex h-100 align-items-center">
                                         <div class="pe-2 border-end d-flex flex-column justify-content-center text-center" style="width: 40%;">
                                             <div class="exec-kpi-label text-danger mb-1" style="font-size:0.65rem; line-height: 1.1;"><i class="bi bi-hourglass-split"></i> Waiting<br>Onboard</div>
-                                            <div class="exec-kpi-val text-danger fw-bolder" id="execValWait" style="font-size: 2.2rem; line-height: 1;">0</div>
+                                            <div class="exec-kpi-val text-danger fw-bolder" id="execValWait" style="font-size: 2.4rem; line-height: 1;">0</div>
                                         </div>
                                         
-                                        <div class="ps-3 d-flex flex-column justify-content-center gap-2" style="width: 60%; font-size: 0.75rem;">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted"><i class="bi bi-circle-fill text-success me-1" style="font-size:0.4rem; vertical-align: middle;"></i>This Wk</span>
-                                                <span id="waitThisWeek" class="fw-bold text-dark">0</span>
+                                        <div class="ps-3 d-flex flex-column justify-content-center" style="width: 60%;">
+                                            
+                                            <div class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; margin-bottom: 8px; letter-spacing: 0.5px;">
+                                                <i class="bi bi-calendar-check me-1"></i>UPCOMING ONBOARDS (BALANCE)
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted"><i class="bi bi-circle-fill text-warning me-1" style="font-size:0.4rem; vertical-align: middle;"></i>Next Wk</span>
-                                                <span id="waitNextWeek" class="fw-bold text-dark">0</span>
+                                            
+                                            <div class="d-flex flex-column gap-2" style="font-size: 0.95rem;">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="text-muted d-inline-block" style="width: 75px;"><i class="bi bi-circle-fill text-success me-2" style="font-size:0.55rem; vertical-align: middle;"></i>This Wk</span>
+                                                    <span id="waitThisWeek" class="fw-bold text-dark ms-2" style="font-size: 1.2rem; line-height: 1;">0</span>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="text-muted d-inline-block" style="width: 75px;"><i class="bi bi-circle-fill text-warning me-2" style="font-size:0.55rem; vertical-align: middle;"></i>Next Wk</span>
+                                                    <span id="waitNextWeek" class="fw-bold text-dark ms-2" style="font-size: 1.2rem; line-height: 1;">0</span>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="text-muted d-inline-block" style="width: 75px;"><i class="bi bi-circle-fill text-secondary me-2" style="font-size:0.55rem; vertical-align: middle;"></i>2+ Wks</span>
+                                                    <span id="waitFuture" class="fw-bold text-dark ms-2" style="font-size: 1.2rem; line-height: 1;">0</span>
+                                                </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted"><i class="bi bi-circle-fill text-secondary me-1" style="font-size:0.4rem; vertical-align: middle;"></i>2+ Wks</span>
-                                                <span id="waitFuture" class="fw-bold text-dark">0</span>
-                                            </div>
+                                            
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            
                         </div>
                     </div>
                 </div>
@@ -733,13 +740,23 @@
             let sDate = parseDateStrict(a.startDate);
             if(sDate && sDate >= wStart && sDate <= wEnd) {
                 let key = '';
-                if(groupBy === 'store') key = `${cleanStr(a.storeNo)} - ${storeMetaMap[cleanStr(a.storeNo)]?.name || 'Unknown'}`; else if(groupBy === 'date') key = formatDateIso(sDate); else key = cleanStr(a.dept) || 'Unknown';
+                if(groupBy === 'store') key = `${cleanStr(a.storeNo)} - ${storeMetaMap[cleanStr(a.storeNo)]?.name || 'Unknown'}`; 
+                else if(groupBy === 'date') key = formatDateIso(sDate); 
+                else key = cleanStr(a.dept) || 'Unknown';
+                    
                 if(!waitData[key]) waitData[key] = 0; waitData[key]++;
             }
         });
 
         let sortedWait = [];
-        if(groupBy === 'date') sortedWait = Object.entries(waitData).sort((a,b) => a[0].localeCompare(b[0])); else sortedWait = Object.entries(waitData).sort((a,b) => b[1] - a[1]);
+        if(groupBy === 'date') {
+            sortedWait = Object.entries(waitData).sort((a,b) => a[0].localeCompare(b[0])); 
+        } else if (groupBy === 'store') {
+            // 🌟 แก้ไข: จัดเรียงกราฟและตารางตามรหัสสาขาตัวเลข
+            sortedWait = Object.entries(waitData).sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
+        } else {
+            sortedWait = Object.entries(waitData).sort((a,b) => b[1] - a[1]);
+        }
 
         const mNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         let labels = sortedWait.map(d => { if(groupBy === 'date') { let parts = d[0].split('-'); return `${parseInt(parts[2])} ${mNames[parseInt(parts[1])-1]} ${parts[0]}`; } return d[0]; });
@@ -766,6 +783,16 @@
         $('#waitTableBody').html(tbodyHtml);
     }
 
+    function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
     function renderFunnel() {
       let f = processedData.funnel; let totalApplied = f.applied; 
       let labels = ['Applied', 'Interviewed', 'Passed', 'Onboarded']; let data = [f.applied, f.interviewed, f.passed, f.onboard];
@@ -778,7 +805,43 @@
        let labels = dates.map(d => { let parts = d.split('-'); return parseInt(parts[2]) + '-' + mNames[parseInt(parts[1])-1]; });
        let dsTemp = dates.map(d => dailyData[d].temp); let dsStudent = dates.map(d => dailyData[d].student); let dsElderly = dates.map(d => dailyData[d].elderly); let dsTotal = dates.map(d => dailyData[d].total || 0);
        let dsOther = dates.map(d => { let sum = dailyData[d].temp + dailyData[d].student + dailyData[d].elderly; let total = dailyData[d].total || 0; let diff = total - sum; return diff > 0 ? diff : 0; });
-       if(charts['parttime']) { charts['parttime'].data.labels = labels; charts['parttime'].data.datasets[0].data = dsTotal; charts['parttime'].data.datasets[1].data = dsOther; charts['parttime'].data.datasets[2].data = dsTemp; charts['parttime'].data.datasets[3].data = dsStudent; charts['parttime'].data.datasets[4].data = dsElderly; charts['parttime'].update(); } else { let ctx = document.getElementById('chartPartTime').getContext('2d'); charts['parttime'] = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { type: 'line', label: 'Total Trend', data: dsTotal, borderColor: '#343a40', backgroundColor: '#343a40', borderWidth: 2, tension: 0.3, pointRadius: 3, order: 0, fill: false }, { label: 'Unclassified', data: dsOther, backgroundColor: '#adb5bd', stack: 'Stack 0', borderRadius:4, order:4 }, { label: 'Find Temp', data: dsTemp, backgroundColor: '#0dcaf0', stack: 'Stack 0', borderRadius:4, order:1 }, { label: 'Student', data: dsStudent, backgroundColor: '#fd7e14', stack: 'Stack 0', borderRadius:4, order:2 }, { label: 'Elderly', data: dsElderly, backgroundColor: '#6f42c1', stack: 'Stack 0', borderRadius:4, order:3 } ] }, options: { responsive:true, maintainAspectRatio:false, plugins: { legend: { position: 'top' }, datalabels: { color: 'white', font:{weight:'bold'}, formatter: (v, ctx)=>ctx.dataset.type==='line'?'':(v>0?v:'') } }, scales: { x: { stacked: true, grid:{display:false} }, y: { stacked: true } } } }); }
+       
+       if(charts['parttime']) { 
+           charts['parttime'].data.labels = labels; 
+           charts['parttime'].data.datasets[0].data = dsTotal; charts['parttime'].data.datasets[1].data = dsOther; charts['parttime'].data.datasets[2].data = dsTemp; charts['parttime'].data.datasets[3].data = dsStudent; charts['parttime'].data.datasets[4].data = dsElderly; 
+           charts['parttime'].update(); 
+       } else { 
+           let ctx = document.getElementById('chartPartTime').getContext('2d'); 
+           charts['parttime'] = new Chart(ctx, { 
+               type: 'bar', 
+               data: { 
+                   labels: labels, 
+                   datasets: [ 
+                       { type: 'line', label: 'Total Trend', data: dsTotal, borderColor: '#343a40', backgroundColor: '#343a40', borderWidth: 2, tension: 0.3, pointRadius: 3, order: 0, fill: false }, 
+                       { label: 'Unclassified', data: dsOther, backgroundColor: '#adb5bd', stack: 'Stack 0', borderRadius:4, order:4 }, 
+                       { label: 'Find Temp', data: dsTemp, backgroundColor: '#0dcaf0', stack: 'Stack 0', borderRadius:4, order:1 }, 
+                       { label: 'Student', data: dsStudent, backgroundColor: '#fd7e14', stack: 'Stack 0', borderRadius:4, order:2 }, 
+                       { label: 'Elderly', data: dsElderly, backgroundColor: '#6f42c1', stack: 'Stack 0', borderRadius:4, order:3 } 
+                   ] 
+               }, 
+               options: { 
+                   responsive:true, maintainAspectRatio:false, 
+                   plugins: { 
+                       legend: { position: 'top' }, 
+                       datalabels: { color: 'white', font:{weight:'bold'}, formatter: (v, ctx)=>ctx.dataset.type==='line'?'':(v>0?v:'') } 
+                   }, 
+                   scales: { x: { stacked: true, grid:{display:false} }, y: { stacked: true } },
+                   // 🌟 NEW: Add onClick handler for Part-time Drill-down
+                   onClick: (e, elements) => { 
+                       if (elements.length > 0) { 
+                           let index = elements[0].index; 
+                           let clickedDate = dates[index]; // e.g., "2026-03-11"
+                           openPartTimeDrillDown(clickedDate); 
+                       } 
+                   }
+               } 
+           }); 
+       }
     }
 
     function renderReadiness() {
@@ -1090,6 +1153,7 @@
             let sNo = cleanStr(key); let storeObj = processedData.stores[sNo]; if (!storeObj) return; 
             title = `Store: ${sNo} - ${storeObj.name} (Position Breakdown)`;
             if (storeObj.depts) { Object.entries(storeObj.depts).forEach(([deptName, d]) => { modalTableData.push({ label: deptName, t: d.t, a: d.a, gap: d.a - d.t, w: d.w, pt: d.pt || 0, total: d.a + (d.pt || 0), rate: d.t > 0 ? (d.a / d.t) * 100 : 0 }); }); }
+            modalSortState = { col: 'gap', asc: true }; 
         } else if (type === 'dept') {
             let deptName = escapeStr(key); title = `Position: ${key} (Store Breakdown)`;
             Object.entries(processedData.stores).forEach(([sNo, sVal]) => {
@@ -1098,8 +1162,10 @@
                     modalTableData.push({ label: `${sNo} - ${sVal.name}`, area: meta.area || "", t: d.t, a: d.a, gap: d.a - d.t, w: d.w, pt: d.pt || 0, total: d.a + (d.pt || 0), rate: d.t > 0 ? (d.a / d.t) * 100 : 0 });
                 }
             });
+            // 🌟 แก้ไข: บังคับให้หน้า Drill-down ของตำแหน่ง เริ่มต้นเรียงตามสาขาเลย
+            modalSortState = { col: 'label', asc: true }; 
         }
-        modalSortState = { col: 'gap', asc: true }; $('#detailModalTitle').text(title); $('#btnModalBack').hide(); renderSortableModal(); showModal();
+        $('#detailModalTitle').text(title); $('#btnModalBack').hide(); renderSortableModal(); showModal();
     }
 
     function renderSortableModal() {
@@ -1109,7 +1175,17 @@
         let theadHtml = '<tr>';
         columns.forEach(col => { let icon = ''; if (modalSortState.col === col.id) { icon = modalSortState.asc ? '<i class="bi bi-caret-up-fill ms-1"></i>' : '<i class="bi bi-caret-down-fill ms-1"></i>'; } else { icon = '<i class="bi bi-caret-down ms-1 text-muted" style="opacity:0.3"></i>'; } let align = col.align || 'text-center'; theadHtml += `<th class="${align} cursor-pointer" style="cursor:pointer; user-select:none;" onclick="handleModalSort('${col.id}')">${col.text} ${icon}</th>`; });
         theadHtml += '</tr>'; $('#detailModalHead').html(theadHtml);
-        modalTableData.sort((a, b) => { let valA = a[modalSortState.col]; let valB = b[modalSortState.col]; if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = valB.toLowerCase(); } if (valA < valB) return modalSortState.asc ? -1 : 1; if (valA > valB) return modalSortState.asc ? 1 : -1; return 0; });
+        
+        modalTableData.sort((a, b) => { 
+            let valA = a[modalSortState.col]; let valB = b[modalSortState.col]; 
+            // 🌟 แก้ไข: ถ้ากดหัวตาราง 'Store' ให้แยกตัวเลขหน้าขีดเพื่อเอามาเปรียบเทียบค่า
+            if (modalSortState.col === 'label' && currentDrillType === 'dept') {
+                valA = parseInt(a.label.split(' ')[0]); valB = parseInt(b.label.split(' ')[0]);
+            } else if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = valB.toLowerCase(); } 
+            
+            if (valA < valB) return modalSortState.asc ? -1 : 1; if (valA > valB) return modalSortState.asc ? 1 : -1; return 0; 
+        });
+        
         let tbodyHtml = '';
         if (modalTableData.length === 0) { tbodyHtml = `<tr><td colspan="${columns.length}">No data found.</td></tr>`; } else {
             modalTableData.forEach(row => {
@@ -1248,6 +1324,51 @@
         }); 
         $('#detailModalTitle').text(`Daily Summary: ${dateKey}`); $('#btnModalBack').hide(); $('#detailModalHead').html('<tr><th class="text-start ps-4">Position (Click to Drill)</th><th>Hires</th><th>Resigns</th><th>Net</th></tr>'); $('#detailModalBody').html(html || '<tr><td colspan="4">No movement recorded.</td></tr>'); showModal(); 
     }
+    function openPartTimeDrillDown(dateKey) {
+        modalState.type = 'parttime'; modalState.key = dateKey;
+        let clickedDate = new Date(dateKey); 
+        let dStart = new Date(clickedDate); dStart.setHours(0,0,0,0); 
+        let dEnd = new Date(clickedDate); dEnd.setHours(23,59,59,999); 
+        
+        let selectedLevels = []; $('.chk-Level:checked').each(function() { selectedLevels.push(cleanStr($(this).val())); });
+        const activeFilters = { fmt: getActiveChips('chipFormat'), od: getActiveChips('chipOD'), pos: getActiveChips('chipPosFocus'), area: getSelectedValues('Area'), store: getSelectedValues('Store'), dept: getSelectedValues('Dept'), isFocus: $('#selStoreScope').val(), levels: selectedLevels }; 
+        let storeStats = {}; 
+        
+        rawData.parttime.forEach(pt => {
+            if(!checkChipMatch(pt.storeNo, pt.dept, pt, activeFilters)) return;
+            let ptDate = parsePastDate(pt.date);
+            if(ptDate && ptDate >= dStart && ptDate <= dEnd) {
+                let sKey = cleanStr(pt.storeNo); 
+                let sName = (storeMetaMap[sKey] ? storeMetaMap[sKey].name : sKey) || "Unknown"; 
+                // บันทึก sKey เพื่อนำไปใช้ Sort เป็นตัวเลข
+                if(!storeStats[sKey]) storeStats[sKey] = { storeNo: sKey, name: `${sKey} - ${sName}`, temp: 0, student: 0, elderly: 0, other: 0, total: 0 }; 
+                let t = parseInt(pt.temp) || 0; let s = parseInt(pt.student) || 0; let e = parseInt(pt.elderly) || 0; let sumAll = t + s + e;
+                let reportedTotal = parseInt(pt.total) || 0; let diff = reportedTotal - sumAll; let o = diff > 0 ? diff : 0; 
+                storeStats[sKey].temp += t; storeStats[sKey].student += s; storeStats[sKey].elderly += e; storeStats[sKey].other += o; storeStats[sKey].total += reportedTotal;
+            }
+        });
+
+        // 🌟 แก้ไข: จัดเรียงสาขาตามรหัสร้าน (1, 2, 3...) ไม่ใช่จำนวนคนแล้ว
+        let sortedStores = Object.values(storeStats).filter(d => d.total > 0).sort((a,b) => parseInt(a.storeNo) - parseInt(b.storeNo)); 
+        
+        let html = ''; let grandTotal = { temp: 0, student: 0, elderly: 0, other: 0, total: 0 };
+        sortedStores.forEach(row => { 
+            grandTotal.temp += row.temp; grandTotal.student += row.student; grandTotal.elderly += row.elderly; grandTotal.other += row.other; grandTotal.total += row.total;
+            let otherHtml = row.other > 0 ? ` (+${row.other} อื่นๆ)` : '';
+            html += `<tr><td class="text-start ps-4 fw-bold text-primary">${row.name}</td><td style="color:#0dcaf0" class="fw-bold">${row.temp > 0 ? row.temp : '-'}</td><td style="color:#fd7e14" class="fw-bold">${row.student > 0 ? row.student : '-'}</td><td style="color:#6f42c1" class="fw-bold">${row.elderly > 0 ? row.elderly : '-'}</td><td class="fw-bold bg-light">${row.total} ${otherHtml}</td></tr>`; 
+        }); 
+        
+        if (sortedStores.length > 0) {
+            let grandOtherHtml = grandTotal.other > 0 ? ` (+${grandTotal.other} อื่นๆ)` : '';
+            html += `<tr class="table-dark text-white border-top border-3 border-dark"><td class="text-start ps-4 fw-bold">GRAND TOTAL</td><td class="fw-bold">${grandTotal.temp}</td><td class="fw-bold">${grandTotal.student}</td><td class="fw-bold">${grandTotal.elderly}</td><td class="fw-bold text-warning">${grandTotal.total} ${grandOtherHtml}</td></tr>`;
+        }
+
+        let displayDate = new Date(dateKey).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        $('#detailModalTitle').text(`Part-time Details: ${displayDate}`); $('#btnModalBack').hide(); 
+        $('#detailModalHead').html(`<tr><th class="text-start ps-4">Store Name</th><th>Find Temp</th><th>Student</th><th>Elderly</th><th class="bg-light">Total Part-time</th></tr>`); 
+        $('#detailModalBody').html(html || '<tr><td colspan="5" class="py-4 text-muted">No part-time staff recorded on this date.</td></tr>'); 
+        showModal(); 
+    }
 
     function openStoreDrillDown(dateKey, deptName) { 
         let clickedDate = new Date(dateKey); let dStart = new Date(clickedDate); dStart.setHours(0,0,0,0); let dEnd = new Date(clickedDate); dEnd.setHours(23,59,59,999); 
@@ -1295,6 +1416,91 @@
         sorted.forEach(([k, v]) => { let rate = v.app > 0 ? ((v.pass/v.app)*100).toFixed(1) : "0.0"; html += `<tr><td class="text-start ps-4">${v.name}</td><td>${v.app}</td><td>${v.pass}</td><td class="fw-bold text-success">${rate}%</td></tr>`; });
         $('#detailModalTitle').text(`Source: ${sourceName}`); $('#btnModalBack').hide(); $('#detailModalHead').html('<tr><th class="text-start ps-4">Store</th><th>Applied</th><th>Passed</th><th>Pass Rate</th></tr>'); $('#detailModalBody').html(html || '<tr><td colspan="4">No data found.</td></tr>'); showModal();
     }
+
+    // --- EXPORTS ---
+    function exportToExcel() {
+        let wb = XLSX.utils.book_new();
+        let dStartVal = $('#dateStart').val(); let dEndVal = $('#dateEnd').val();
+        if(dStartVal && dEndVal && new Date(dStartVal) > new Date(dEndVal)) { let temp = dStartVal; dStartVal = dEndVal; dEndVal = temp; }
+        const dStart = new Date(dStartVal); dStart.setHours(0,0,0,0); const dEnd = new Date(dEndVal); dEnd.setHours(23,59,59,999);
+        const scopeValue = $('#selStoreScope').val(); 
+        let selectedLevels = []; $('.chk-Level:checked').each(function() { selectedLevels.push(cleanStr($(this).val())); });
+        const activeFilters = { fmt: getActiveChips('chipFormat'), od: getActiveChips('chipOD'), pos: getActiveChips('chipPosFocus'), area: getSelectedValues('Area'), store: getSelectedValues('Store'), dept: getSelectedValues('Dept'), isFocus: scopeValue, levels: selectedLevels };
+        
+        let storeData = [["Store", "Area", "Target", "Active", "Vacancy", "Waiting", "PT", "FT + PT", "Readiness"]];
+        Object.entries(processedData.stores).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).forEach(([no, v]) => {
+            let meta = storeMetaMap[no] || {}; let area = meta.area || ""; let pct = v.t > 0 ? (v.a/v.t)*100 : 0; let vac = v.a - v.t; let pt = processedData.ptStore[no] || 0; let totalAll = v.a + pt;
+            storeData.push([ no + " - " + v.name, area, v.t, v.a, vac, v.w, pt, totalAll, pct.toFixed(1) + "%" ]);
+        });
+        if (storeData.length > 1) { let ws1 = XLSX.utils.aoa_to_sheet(storeData); styleSheet(ws1); XLSX.utils.book_append_sheet(wb, ws1, "Store Summary"); }
+
+        let breakdownData = [["Store", "Area", "Position", "Target", "Active", "Vacancy", "Waiting", "PT", "FT + PT", "Readiness"]];
+        Object.entries(processedData.stores).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).forEach(([no, v]) => {
+            let meta = storeMetaMap[no] || {}; let area = meta.area || ""; let storeLabel = no + " - " + v.name;
+            if (v.depts) {
+                Object.entries(v.depts).sort().forEach(([deptName, dVal]) => {
+                    let pct = dVal.t > 0 ? (dVal.a/dVal.t)*100 : 0; let vac = dVal.a - dVal.t; let pt = dVal.pt || 0; let total = dVal.a + pt;
+                    breakdownData.push([ storeLabel, area, deptName, dVal.t, dVal.a, vac, dVal.w, pt, total, pct.toFixed(1) + "%" ]);
+                });
+            }
+        });
+        if (breakdownData.length > 1) { let ws2 = XLSX.utils.aoa_to_sheet(breakdownData); styleSheet(ws2); XLSX.utils.book_append_sheet(wb, ws2, "Breakdown by Position"); }
+
+        let srcRows = [["Source Channel", "Applicants", "Passed", "Pass Rate %"]];
+        Object.entries(processedData.sources).forEach(([k, v]) => { let rate = v.app > 0 ? (v.pass/v.app)*100 : 0; srcRows.push([k, v.app, v.pass, rate.toFixed(1) + "%"]); });
+        if (srcRows.length > 1) { let ws3 = XLSX.utils.aoa_to_sheet(srcRows); styleSheet(ws3); XLSX.utils.book_append_sheet(wb, ws3, "Sourcing"); }
+
+        let dailyRows = [["Date", "Hires", "Resigns", "Net"]]; let dObj = {};
+        rawData.staff.forEach(s => {
+            if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return;
+            let jd = parsePastDate(s.joinDate); let rd = parsePastDate(s.termDate);
+            if(jd && jd >= dStart && jd <= dEnd) { let k = formatDateIso(jd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].in++; }
+            if(rd && rd >= dStart && rd <= dEnd) { let k = formatDateIso(rd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].out++; }
+        });
+        Object.keys(dObj).sort().forEach(k => { let r = dObj[k]; dailyRows.push([k, r.in, r.out, r.in - r.out]); });
+        if (dailyRows.length > 1) { let ws4 = XLSX.utils.aoa_to_sheet(dailyRows); styleSheet(ws4); XLSX.utils.book_append_sheet(wb, ws4, "Daily Movement"); }
+        
+        let funnelData = {}; let funnelHeader = [["Store", "Area", "Department", "Position", "Interview Status", "Applied", "Interviewed", "Passed", "Onboarded"]];
+        rawData.applicants.forEach(a => {
+            if(!checkChipMatch(a.storeNo, a.dept, a, activeFilters)) return;
+            let sNo = cleanStr(a.storeNo); let meta = storeMetaMap[sNo] || {}; let sName = meta.name || sNo; let sArea = meta.area || "";
+            let dept = a.dept; let pos = a.position || "Unspecified"; let status = a.status || "Pending"; let key = `${sNo}|${dept}|${pos}|${status}`;
+            if (!funnelData[key]) { funnelData[key] = { store: `${sNo} - ${sName}`, area: sArea, dept: dept, pos: pos, status: status, applied: 0, interviewed: 0, passed: 0, onboarded: 0 }; }
+            let applyDate = parsePastDate(a.applyDate); let intDate = parsePastDate(a.interviewDate); let sDate = parseDateStrict(a.startDate);
+            if(applyDate && applyDate >= dStart && applyDate <= dEnd) { funnelData[key].applied++; }
+            if(intDate && intDate >= dStart && intDate <= dEnd) { funnelData[key].interviewed++; if(a.status.includes("ผ่าน") || a.startStatus.includes("รอ")) funnelData[key].passed++; }
+            if(sDate && sDate >= dStart && sDate <= dEnd) { funnelData[key].onboarded++; }
+        });
+        Object.values(funnelData).forEach(row => { if (row.applied > 0 || row.interviewed > 0 || row.passed > 0 || row.onboarded > 0) { funnelHeader.push([ row.store, row.area, row.dept, row.pos, row.status, row.applied, row.interviewed, row.passed, row.onboarded ]); } });
+        if (funnelHeader.length > 1) { let wsFunnel = XLSX.utils.aoa_to_sheet(funnelHeader); styleSheet(wsFunnel); XLSX.utils.book_append_sheet(wb, wsFunnel, "Recruitment Funnel"); }
+        XLSX.writeFile(wb, "HR_Dashboard_Export.xlsx");
+    }
+    
+    function styleSheet(ws) {
+        if (!ws || !ws['!ref']) return; 
+        let range = XLSX.utils.decode_range(ws['!ref']);
+        const headerStyle = { fill: { fgColor: { rgb: "2C3E50" } }, font: { color: { rgb: "FFFFFF" }, bold: true, name: "Sarabun" }, alignment: { horizontal: "center", vertical: "center" }, border: { bottom: { style: "thin", color: { rgb: "000000" } } } };
+        const rowOddStyle = { fill: { fgColor: { rgb: "F8F9FA" } }, font: { name: "Sarabun" } };
+        const rowEvenStyle = { fill: { fgColor: { rgb: "FFFFFF" } }, font: { name: "Sarabun" } };
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                let cell_address = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cell_address]) continue;
+                if (R === 0) { ws[cell_address].s = headerStyle; } else {
+                    let style = (R % 2 !== 0) ? { ...rowOddStyle } : { ...rowEvenStyle }; let val = ws[cell_address].v;
+                    if (C >= 4 && C <= 5) { if (typeof val === 'number') { if (val < 0) style.font = { ...style.font, color: { rgb: "DC3545" }, bold: true }; if (val > 0 && C === 5) { style.font = { ...style.font, color: { rgb: "FD7E14" }, bold: true }; } } }
+                    if (typeof val === 'string' && val.includes('%')) { let num = parseFloat(val); if (num >= 100) style.font = { ...style.font, color: { rgb: "198754" }, bold: true }; else if (num < 90) style.font = { ...style.font, color: { rgb: "DC3545" } }; }
+                    ws[cell_address].s = style;
+                }
+            }
+        }
+        let wscols = []; for (let i=0; i<=range.e.c; i++) wscols.push({wch:15}); wscols[0] = {wch:25}; ws['!cols'] = wscols;
+    }
+
+    function exportModalTable() { 
+        let wb = XLSX.utils.book_new(); let ws = XLSX.utils.table_to_sheet(document.getElementById('modalTableContent')); XLSX.utils.book_append_sheet(wb, ws, "DrillDown"); XLSX.writeFile(wb, "DrillDown_Export.xlsx"); 
+    }
+    function exportSection(type) { exportToExcel(); }
   </script>
 </body>
 </html>
