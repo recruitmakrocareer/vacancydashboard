@@ -22,25 +22,27 @@
       --card-radius: 12px;
       --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --navbar-height: 60px;
     }
     body { background-color: var(--bg-color); font-family: 'Sarabun', sans-serif; color: #333; overflow-x: hidden; }
-    .wrapper { display: flex; width: 100%; align-items: stretch; }
     
-    #sidebar { min-width: 250px; max-width: 250px; background: #2c3e50; color: #fff; min-height: 100vh; position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 1100; }
-    #sidebar .sidebar-header { padding: 20px; background: #1a252f; border-bottom: 1px solid #34495e; }
-    #sidebar ul.components { padding: 20px 0; border-bottom: 1px solid #34495e; list-style: none; margin: 0; }
-    #sidebar ul li a { padding: 15px 25px; font-size: 0.95rem; display: block; color: #bdc3c7; text-decoration: none; transition: 0.2s; border-left: 4px solid transparent; cursor: pointer; }
-    #sidebar ul li a:hover { color: #fff; background: #34495e; }
-    #sidebar ul li a.active { background: #34495e; color: #fff; border-left-color: var(--makro-red); }
-    #sidebar ul li a i { margin-right: 10px; width: 20px; text-align: center; }
-
-    #content { width: 100%; padding: 0; min-height: 100vh; background: var(--bg-color); }
+    .wrapper { display: flex; width: 100%; align-items: stretch; flex-direction: column; }
+    #content { width: 100%; padding: 0; min-height: calc(100vh - var(--navbar-height)); background: var(--bg-color); }
     .page-section { display: none; }
     .page-section.active { display: block; animation: fadeIn 0.3s; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+    /* --- TOP NAVBAR --- */
+    .top-navbar { background-color: #2c3e50; box-shadow: 0 2px 8px rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 1100; height: var(--navbar-height); }
+    .top-navbar .navbar-brand { font-size: 1.25rem; letter-spacing: 0.5px; color: #fff; }
+    .top-navbar .nav-link { color: #bdc3c7; font-weight: 500; font-size: 0.95rem; padding: 16px 20px !important; border-bottom: 3px solid transparent; transition: all 0.2s ease-in-out; cursor: pointer; }
+    .top-navbar .nav-link:hover { color: #ffffff; background-color: rgba(255,255,255,0.05); }
+    .top-navbar .nav-link.active { color: #ffffff; border-bottom-color: var(--makro-red); font-weight: 600; background-color: rgba(255,255,255,0.05); }
+    .navbar-toggler { border-color: rgba(255,255,255,0.3); }
+    .navbar-collapse { background-color: #2c3e50; }
+
     /* --- STICKY HEADERS --- */
-    .sticky-dashboard-header { position: sticky; top: 0; z-index: 1050; background-color: #ffffff; padding: 15px 25px; border-bottom: 1px solid #e0e0e0; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .sticky-dashboard-header { position: sticky; top: var(--navbar-height); z-index: 1050; background-color: #ffffff; padding: 15px 25px; border-bottom: 1px solid #e0e0e0; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .header-title h4 { font-weight: 700; color: #2c3e50; margin: 0; white-space: nowrap; }
     .filter-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #6c757d; white-space: nowrap; }
     .custom-chk .form-check-input { cursor: pointer; border-color: #adb5bd; width: 1.1em; height: 1.1em; margin-top: 0.15em; }
@@ -110,15 +112,30 @@
     <h5 id="loading-text" class="fw-bold text-secondary">Loading Initial Data...</h5>
   </div>
 
-  <div class="wrapper">
-      <nav id="sidebar">
-          <div class="sidebar-header"><h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3-fill text-danger me-2"></i>HR Analytics</h5></div>
-          <ul class="components">
-              <li><a onclick="switchPage('operations', this)" class="active"><i class="bi bi-speedometer2"></i> Operations Dashboard</a></li>
-              <li><a onclick="switchPage('executive', this)"><i class="bi bi-briefcase-fill"></i> Executive Overview</a></li>
-          </ul>
-      </nav>
+  <nav class="navbar navbar-expand-lg top-navbar navbar-dark">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand fw-bold" href="#">
+        <i class="bi bi-diagram-3-fill text-danger me-2"></i>HR Analytics
+      </a>
+      
+      <button class="navbar-toggler shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#topNavBar" aria-controls="topNavBar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      
+      <div class="collapse navbar-collapse" id="topNavBar">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-1">
+          <li class="nav-item">
+            <a class="nav-link active" onclick="switchPage('operations', this)"><i class="bi bi-speedometer2 me-1"></i> Operations Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" onclick="switchPage('executive', this)"><i class="bi bi-briefcase-fill me-1"></i> Executive Overview</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
+  <div class="wrapper">
       <div id="content">
 
         <div id="page-operations" class="page-section active">
@@ -422,12 +439,27 @@
   <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
+    // --- 🌟 GLOBAL CONFIGURATION ---
+    // ในอนาคตควรย้าย Config นี้ไปไว้ใน Google Sheets (เช่น ชีต "Dept_Mapping") แล้วดึงมาตอนรัน
+    window.EXEC_DEPT_MAPPING = {
+        "support": ["goods receiving", "alc"],
+        "floor": ["fruit & vegetable", "seafood", "butchery", "frozen", "bakery", "dry food 1", "dry food 2", "non food 1", "non food 2", "non fresh", "ff sales specialist", "fresh food"],
+        "o2o": ["picker", "packer", "loader", "admin o2o", "o2o operation", "o2o delivery", "ocs", "ofm / hub manager"],
+        "b2b": ["b2b"],
+        "credit": ["credit sales", "key account"]
+    };
+
     Chart.register(ChartDataLabels);
     Chart.defaults.font.family = "'Sarabun', sans-serif";
     Chart.defaults.color = "#555";
 
     let rawData = { targets: [], applicants: [], staff: [], parttime: [] };
-    let processedData = { stores: {}, depts: {}, funnel: {}, sources: {}, metrics: {}, parttimeDaily: {}, ptStore: {}, ptDept: {} };
+    let processedData = { 
+        stores: {}, depts: {}, funnel: {}, sources: {}, metrics: {}, 
+        parttimeDaily: {}, ptStore: {}, ptDept: {}, 
+        dailyMovement: {}, exportFunnel: {}, // 🌟 NEW: สกัดข้อมูลเตรียม Export ไว้เลย ไม่ต้องคำนวณซ้ำ
+        execBreakdown: {}, execDailyData: {}
+    };
     let charts = {};
     let storeMetaMap = {}; 
     let baseTargetKeys = new Set();
@@ -443,6 +475,16 @@
     let modalSortState = { col: 'gap', asc: true };
 
     // --- UTILITIES ---
+    function escapeHTML(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    
     function escapeStr(str) { return (!str) ? '' : str.replace(/'/g, "\\'"); }
     function parseDateStrict(str) { 
         if(!str) return null; if (str instanceof Date) return str; 
@@ -460,19 +502,11 @@
         if(isEnd) d.setHours(23,59,59,999); else d.setHours(0,0,0,0);
         return d;
     }
+    
     function parsePastDate(str) { 
-        let parsedDate = parseDateStrict(str);
-        if (!parsedDate) return null;
-        let parts = str.split(/[-/]/); 
-        let day = parseInt(parts[0], 10); let month = parseInt(parts[1], 10); let year = parseInt(parts[2], 10);
-        if (year < 100) year += 2000; 
-        let today = new Date(); today.setHours(23, 59, 59, 999);
-        if (parsedDate > today && day <= 12) { 
-            let swappedDate = new Date(year, day - 1, month); 
-            if (swappedDate <= today) return swappedDate; 
-        }
-        return parsedDate; 
+        return parseDateStrict(str); // 🛠️ FIX: ถอดลอจิกสลับวันที่ออก ป้องกัน Silent Corruption
     }
+    
     function formatDateIso(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
     function cleanStr(s) { 
         if(!s) return ""; let str = String(s).replace(/\s+/g, ' ').trim(); 
@@ -482,7 +516,9 @@
 
     $(document).ready(function() {
       let today = new Date();
-      let startDef = new Date(2026, 0, 1);
+      let currentYear = new Date().getFullYear(); // 🛠️ FIX: ป้องกันระเบิดเวลาปี 2026
+      let startDef = new Date(currentYear, 0, 1);
+      
       if(document.getElementById('dateEnd')) document.getElementById('dateEnd').valueAsDate = today;
       if(document.getElementById('dateStart')) document.getElementById('dateStart').valueAsDate = startDef;
       if(document.getElementById('execDateEnd')) document.getElementById('execDateEnd').valueAsDate = today;
@@ -490,11 +526,23 @@
       if(document.getElementById('todayDate')) document.getElementById('todayDate').innerText = today.toLocaleDateString();
       
       console.log("[INIT] Fetching data from backend...");
-      google.script.run.withSuccessHandler(initDashboard).getDashboardData();
+      
+      // 🛠️ FIX: ใส่ Failure Handler ป้องกันหน้าจอโหลดค้าง
+      google.script.run
+        .withSuccessHandler(initDashboard)
+        .withFailureHandler(function(error) {
+            alert("❌ เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message);
+            $('#loading').fadeOut(300);
+        })
+        .getDashboardData();
     });
 
     function initDashboard(res) {
-      if(res.error) { alert("Error: " + res.message); return; }
+      if(res.error) { 
+          alert("Error: " + res.message); 
+          $('#loading').fadeOut(300); 
+          return; 
+      }
       console.log("[INIT] Data fetched successfully. Mapping structures...");
       rawData = res;
       
@@ -507,10 +555,17 @@
     }
 
     function switchPage(pageId, linkEl) {
-        $('#sidebar ul li a').removeClass('active');
+        $('.navbar-nav .nav-link').removeClass('active');
         $(linkEl).addClass('active');
         $('.page-section').removeClass('active');
         $('#page-' + pageId).addClass('active');
+        
+        let navbarCollapse = document.getElementById('topNavBar');
+        if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+            let bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+            if(bsCollapse) bsCollapse.hide();
+        }
+
         if(pageId === 'executive') triggerFilters(true);
         else triggerFilters(false);
     }
@@ -582,7 +637,7 @@
             let val = isObj ? item.val : item; let label = isObj ? item.label : item; 
             let fn = type.startsWith('Exec') ? 'triggerFilters(true)' : 'triggerFilters(false)';
             if(type === 'Level' || type === 'ExecLevel') fn = ''; 
-            html += '<div class="dropdown-item-custom" onclick="toggleCheckbox(this)"><input type="checkbox" class="form-check-input chk-'+type+' me-2" value="'+val+'" onchange="updateDropdownLabel(\''+type+'\', \'All '+type+'s\'); ' + fn + '"><span>'+label+'</span></div>'; 
+            html += '<div class="dropdown-item-custom" onclick="toggleCheckbox(this)"><input type="checkbox" class="form-check-input chk-'+type+' me-2" value="'+val+'" onchange="updateDropdownLabel(\''+type+'\', \'All '+type+'s\'); ' + fn + '"><span>'+escapeHTML(label)+'</span></div>'; 
         });
         $('#'+listId).html(html);
     }
@@ -591,7 +646,7 @@
     function clearMultiSelect(type, defaultLabel) { $(`.chk-${type}`).prop('checked', false); updateDropdownLabel(type, defaultLabel); if(type.startsWith('Exec')) triggerFilters(true); else triggerFilters(false); }
     function getSelectedValues(type) { let vals = []; $(`.chk-${type}:checked`).each(function() { vals.push(cleanStr($(this).val())); }); return vals; }
     function updateDropdownLabel(type, defaultText) { let vals = getSelectedValues(type); let btn = $('#btn'+type); if (vals.length === 0) { btn.text(defaultText); } else if (vals.length <= 2) { let labels = []; $(`.chk-${type}:checked`).each(function() { labels.push($(this).next('span').text()); }); btn.text(labels.join(', ')); } else { btn.text(vals.length + ' Selected'); } }
-    function renderChips(id, values) { let html = ''; let isExec = id.startsWith('exec') ? 'true' : 'false'; values.forEach(v => { const disp = (v ?? '').toString().trim(); const val = cleanStr(disp); html += `<div class="chip" data-val="${val}" onclick="toggleChip(this); triggerFilters(${isExec})">${disp}</div>`; }); $('#'+id).html(html); }
+    function renderChips(id, values) { let html = ''; let isExec = id.startsWith('exec') ? 'true' : 'false'; values.forEach(v => { const disp = (v ?? '').toString().trim(); const val = cleanStr(disp); html += `<div class="chip" data-val="${val}" onclick="toggleChip(this); triggerFilters(${isExec})">${escapeHTML(disp)}</div>`; }); $('#'+id).html(html); }
     function toggleChip(el) { $(el).toggleClass('active'); }
     function getActiveChips(id) { return $('#'+id+' .chip.active').map(function(){return $(this).data('val') || cleanStr($(this).text());}).get(); }
     function setFillRateView(mode, btn) { fillRateView = mode; $(btn).addClass('active').siblings().removeClass('active'); renderReadiness(); }
@@ -603,7 +658,7 @@
         if (!baseTargetKeys.has(key + "|" + d)) return false;
         const meta = storeMetaMap[key] || { od: "", area: "", format: "", focus: "" };
         if (filters.isFocus && filters.isFocus !== 'all') { let focusStr = (meta.focus || "").toString().toLowerCase(); let searchStr = filters.isFocus.toString().toLowerCase(); if (!focusStr.includes(searchStr)) return false; }
-        const fmt = cleanStr(meta.format || (recordMeta && recordMeta.format) || ""); const area = cleanStr(meta.area || (recordMeta && recordMeta.area) || ""); const od = cleanStr(meta.od || (recordMeta && recordMeta.od) || ""); 
+        const fmt = cleanStr(meta.format || (recordMeta && recordMeta.format) || ""); const area = cleanStr(meta.area || (recordMeta && recordMeta.od) || ""); const od = cleanStr(meta.od || (recordMeta && recordMeta.od) || ""); 
         let rowLevel = ""; if (recordMeta && recordMeta.level) rowLevel = cleanStr(recordMeta.level);
         if (filters.levels && filters.levels.length > 0) { if (rowLevel !== "") { let match = filters.levels.some(l => l.toLowerCase() === rowLevel.toLowerCase()); if (!match) return false; } }
         if (filters.fmt.length > 0 && !filters.fmt.includes(fmt)) return false;
@@ -630,15 +685,33 @@
       let compMode = $('#selCompPeriod').val();
       let dPrev = new Date(dEnd); if (compMode === 'start') { dPrev = new Date(dStart); } else { dPrev.setDate(dEnd.getDate() - parseInt(compMode)); } dPrev.setHours(23,59,59,999);
       let activeStaffMap = {}; let activeStaffMapPrev = {}; 
-      let pd = { stores: {}, depts: {}, funnel: { applied:0, interviewed:0, passed:0, onboard:0 }, sources: {}, metrics: { target:0, active:0, gap:0, wait:0, terminates:0, hires:0 }, parttimeDaily: {}, ptStore: {}, ptDept: {} };
+      
+      // 🌟 FIX: สกัดข้อมูลเตรียมไว้สำหรับการทำ Export & กราฟ เพื่อความเร็ว
+      let pd = { 
+          stores: {}, depts: {}, funnel: { applied:0, interviewed:0, passed:0, onboard:0 }, sources: {}, 
+          metrics: { target:0, active:0, gap:0, wait:0, terminates:0, hires:0 }, 
+          parttimeDaily: {}, ptStore: {}, ptDept: {},
+          dailyMovement: {}, exportFunnel: {} 
+      };
       
       rawData.staff.forEach(s => {
           if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return;
           let jd = parsePastDate(s.joinDate); let td = parsePastDate(s.termDate); let k = cleanStr(s.storeNo) + "|" + cleanStr(s.dept);
           if (jd && jd <= dEnd && (!td || td > dEnd)) { activeStaffMap[k] = (activeStaffMap[k] || 0) + 1; }
           if (jd && jd <= dPrev && (!td || td > dPrev)) { activeStaffMapPrev[k] = (activeStaffMapPrev[k] || 0) + 1; }
-          if (td && td >= dStart && td <= dEnd) pd.metrics.terminates++;
-          if (jd && jd >= dStart && jd <= dEnd) pd.metrics.hires++;
+          
+          if(jd && jd >= dStart && jd <= dEnd) { 
+              pd.metrics.hires++; 
+              let keyDate = formatDateIso(jd); 
+              if(!pd.dailyMovement[keyDate]) pd.dailyMovement[keyDate] = {in:0, out:0}; 
+              pd.dailyMovement[keyDate].in++; 
+          }
+          if(td && td >= dStart && td <= dEnd) { 
+              pd.metrics.terminates++; 
+              let keyDate = formatDateIso(td); 
+              if(!pd.dailyMovement[keyDate]) pd.dailyMovement[keyDate] = {in:0, out:0}; 
+              pd.dailyMovement[keyDate].out++; 
+          }
       });
       
       let aggTargets = {};
@@ -665,17 +738,25 @@
          if(!checkChipMatch(a.storeNo, a.dept, a, activeFilters)) return;
          let applyDate = parsePastDate(a.applyDate); let intDate = parsePastDate(a.interviewDate); let sDate = parseDateStrict(a.startDate); let today = new Date(); today.setHours(0,0,0,0);
          let src = cleanStr(a.source) || "Unknown"; if(!pd.sources[src]) pd.sources[src] = { app: 0, pass: 0 };
-         if(applyDate && applyDate >= dStart && applyDate <= dEnd) { pd.funnel.applied++; pd.sources[src].app++; }
-         if(intDate && intDate >= dStart && intDate <= dEnd) pd.funnel.interviewed++;
-         if(sDate && sDate >= dStart && sDate <= dEnd) pd.funnel.onboard++; 
-         if((a.status.includes("ผ่าน") || a.startStatus.includes("รอ")) && intDate >= dStart && intDate <= dEnd) { pd.funnel.passed++; pd.sources[src].pass++; }
+         
+         // 🌟 FIX: สกัดข้อมูลเตรียม Export (DRY Principle)
+         let sNo = cleanStr(a.storeNo); let meta = storeMetaMap[sNo] || {}; let sName = meta.name || sNo; let sArea = meta.area || "";
+         let pos = a.position || "Unspecified"; let status = a.status || "Pending"; let dept = a.dept || "Unknown";
+         let expKey = `${sNo}|${dept}|${pos}|${status}`;
+         if (!pd.exportFunnel[expKey]) { pd.exportFunnel[expKey] = { store: `${sNo} - ${sName}`, area: sArea, dept: dept, pos: pos, status: status, applied: 0, interviewed: 0, passed: 0, onboarded: 0 }; }
+
+         if(applyDate && applyDate >= dStart && applyDate <= dEnd) { pd.funnel.applied++; pd.sources[src].app++; pd.exportFunnel[expKey].applied++; }
+         if(intDate && intDate >= dStart && intDate <= dEnd) { pd.funnel.interviewed++; pd.exportFunnel[expKey].interviewed++; }
+         if(sDate && sDate >= dStart && sDate <= dEnd) { pd.funnel.onboard++; pd.exportFunnel[expKey].onboarded++; } 
+         if((a.status.includes("ผ่าน") || a.startStatus.includes("รอ")) && intDate >= dStart && intDate <= dEnd) { pd.funnel.passed++; pd.sources[src].pass++; pd.exportFunnel[expKey].passed++; }
+         
          if(sDate && sDate > today) {
-             pd.metrics.wait++; let sKey = cleanStr(a.storeNo), dKey = cleanStr(a.dept);
-             if(!pd.stores[sKey]) { let meta = storeMetaMap[sKey] || {}; pd.stores[sKey] = { name: meta.name || "Unknown", t:0, a:0, w:0, depts:{} }; }
-             if(!pd.stores[sKey].depts[dKey]) pd.stores[sKey].depts[dKey] = {t:0,a:0,w:0, pt:0}; 
-             pd.stores[sKey].w += 1; pd.stores[sKey].depts[dKey].w += 1;
-             if(!pd.depts[dKey]) pd.depts[dKey] = {t:0,a:0,w:0, ap:0, pt:0}; 
-             pd.depts[dKey].w += 1;
+             pd.metrics.wait++; 
+             if(!pd.stores[sNo]) { pd.stores[sNo] = { name: sName, t:0, a:0, w:0, depts:{} }; }
+             if(!pd.stores[sNo].depts[dept]) pd.stores[sNo].depts[dept] = {t:0,a:0,w:0, pt:0}; 
+             pd.stores[sNo].w += 1; pd.stores[sNo].depts[dept].w += 1;
+             if(!pd.depts[dept]) pd.depts[dept] = {t:0,a:0,w:0, ap:0, pt:0}; 
+             pd.depts[dept].w += 1;
          }
       });
       
@@ -705,7 +786,10 @@
     }
 
     function resetFilters() {
-      let today = new Date(); let startDef = new Date(2026, 0, 1);
+      let today = new Date(); 
+      let currentYear = new Date().getFullYear(); // 🛠️ FIX
+      let startDef = new Date(currentYear, 0, 1);
+      
       if(document.getElementById('dateEnd')) document.getElementById('dateEnd').valueAsDate = today; 
       if(document.getElementById('dateStart')) document.getElementById('dateStart').valueAsDate = startDef;
       $('#selStoreScope').val('all'); handleScopeChange(false, true); 
@@ -722,7 +806,7 @@
       renderFunnel(); renderReadiness(); renderSourceChart(); renderDailyChart(); renderPartTimeChart(); renderWaitOnboardComponent(); renderStoreTable(); renderPosTable();
     }
 
-    // --- 🌟 NEW: WAIT ONBOARD COMPONENT LOGIC ---
+    // --- WAIT ONBOARD COMPONENT LOGIC ---
     function renderWaitOnboardComponent() {
         let dStartVal = $('#waitStartDate').val(); let dEndVal = $('#waitEndDate').val();
         let wStart = parseLocalInputDate(dStartVal, false); let wEnd = parseLocalInputDate(dEndVal, true);
@@ -752,7 +836,6 @@
         if(groupBy === 'date') {
             sortedWait = Object.entries(waitData).sort((a,b) => a[0].localeCompare(b[0])); 
         } else if (groupBy === 'store') {
-            // 🌟 แก้ไข: จัดเรียงกราฟและตารางตามรหัสสาขาตัวเลข
             sortedWait = Object.entries(waitData).sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
         } else {
             sortedWait = Object.entries(waitData).sort((a,b) => b[1] - a[1]);
@@ -772,26 +855,16 @@
         }
 
         let thTitle = groupBy === 'store' ? 'Branch / Store' : (groupBy === 'date' ? 'Onboard Date' : 'Position / Department');
-        $('#waitTableHead').html(`<tr><th class="text-start ps-4">${thTitle}</th><th>Wait Onboard Count</th></tr>`);
+        $('#waitTableHead').html(`<tr><th class="text-start ps-4">${escapeHTML(thTitle)}</th><th>Wait Onboard Count</th></tr>`);
         let tbodyHtml = ''; let total = 0;
         sortedWait.forEach(([key, val], index) => {
             total += val; let rowLabel = labels[index]; let onClickStr = ''; let iconStr = '';
             if(groupBy !== 'date') { onClickStr = `onclick="openDetailModal('${groupBy}', '${escapeStr(key.split(' - ')[0])}')" class="clickable-row"`; iconStr = `<i class="bi bi-caret-right-fill small"></i>`; }
-            tbodyHtml += `<tr ${onClickStr}><td class="text-start ps-4 fw-bold text-primary">${rowLabel} ${iconStr}</td><td class="fw-bold text-warning">${val}</td></tr>`;
+            tbodyHtml += `<tr ${onClickStr}><td class="text-start ps-4 fw-bold text-primary">${escapeHTML(rowLabel)} ${iconStr}</td><td class="fw-bold text-warning">${val}</td></tr>`;
         });
         if(sortedWait.length === 0) tbodyHtml = `<tr><td colspan="2" class="text-muted py-4">No candidates found in this date range.</td></tr>`; else tbodyHtml += `<tr class="table-dark text-white border-top border-3 border-dark"><td class="text-start ps-4 fw-bold">TOTAL</td><td class="fw-bold">${total}</td></tr>`;
         $('#waitTableBody').html(tbodyHtml);
     }
-
-    function escapeHTML(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
 
     function renderFunnel() {
       let f = processedData.funnel; let totalApplied = f.applied; 
@@ -831,11 +904,10 @@
                        datalabels: { color: 'white', font:{weight:'bold'}, formatter: (v, ctx)=>ctx.dataset.type==='line'?'':(v>0?v:'') } 
                    }, 
                    scales: { x: { stacked: true, grid:{display:false} }, y: { stacked: true } },
-                   // 🌟 NEW: Add onClick handler for Part-time Drill-down
                    onClick: (e, elements) => { 
                        if (elements.length > 0) { 
                            let index = elements[0].index; 
-                           let clickedDate = dates[index]; // e.g., "2026-03-11"
+                           let clickedDate = dates[index];
                            openPartTimeDrillDown(clickedDate); 
                        } 
                    }
@@ -860,16 +932,16 @@
     function renderDailyChart() {
        let dStartVal = $('#dateStart').val(); let dEndVal = $('#dateEnd').val();
        let dStart = new Date(dStartVal); dStart.setHours(0,0,0,0); let dEnd = new Date(dEndVal); dEnd.setHours(23,59,59,999);
-       let selectedLevels = []; $('.chk-Level:checked').each(function() { selectedLevels.push(cleanStr($(this).val())); });
-       const activeFilters = { fmt: getActiveChips('chipFormat'), od: getActiveChips('chipOD'), pos: getActiveChips('chipPosFocus'), area: getSelectedValues('Area'), store: getSelectedValues('Store'), dept: getSelectedValues('Dept'), isFocus: $('#selStoreScope').val(), levels: selectedLevels };
        
-       let dObj = {}; rawData.staff.forEach(s => { if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return; let jd = parsePastDate(s.joinDate); let rd = parsePastDate(s.termDate); if(jd && jd >= dStart && jd <= dEnd) { let k = formatDateIso(jd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].in++; } if(rd && rd >= dStart && rd <= dEnd) { let k = formatDateIso(rd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].out++; } });
-       let keys = []; let curr = new Date(dStart); let safety = 0; while(curr <= dEnd && safety < 366) { keys.push(formatDateIso(curr)); curr.setDate(curr.getDate() + 1); safety++; }
-       let netData = keys.map(k => { let h = dObj[k] ? dObj[k].in : 0; let r = dObj[k] ? dObj[k].out : 0; return h - r; });
+       // 🌟 FIX: ดึงข้อมูลที่สกัดแล้วจาก processedData เลย ไม่ต้องวนลูป rawData
+       let keys = []; let curr = new Date(dStart); let safety = 0; 
+       while(curr <= dEnd && safety < 366) { keys.push(formatDateIso(curr)); curr.setDate(curr.getDate() + 1); safety++; }
+       
+       let netData = keys.map(k => { let r = processedData.dailyMovement[k] || {in:0, out:0}; return r.in - r.out; });
        const mNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-       
        let labels = keys.map(k => { let parts = k.split('-'); return parseInt(parts[2]) + '-' + mNames[parseInt(parts[1])-1]; });
-       let hiresData = keys.map(k=>(dObj[k]?dObj[k].in:0)); let resignsData = keys.map(k=>(dObj[k]?dObj[k].out:0));
+       let hiresData = keys.map(k => { let r = processedData.dailyMovement[k] || {in:0, out:0}; return r.in; });
+       let resignsData = keys.map(k => { let r = processedData.dailyMovement[k] || {in:0, out:0}; return r.out; });
 
        if(charts['daily']) { charts['daily'].data.labels = labels; charts['daily'].data.datasets[0].data = netData; charts['daily'].data.datasets[1].data = hiresData; charts['daily'].data.datasets[2].data = resignsData; charts['daily'].update(); } else { let ctx = document.getElementById('chartDaily').getContext('2d'); charts['daily'] = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { type: 'line', label: 'Net Trend', data: netData, borderColor: '#0d6efd', backgroundColor:'#0d6efd', borderWidth: 3, tension: 0.3, pointRadius: 3, order: 0 }, {label:'Hires', data:hiresData, backgroundColor:'#28a745', borderRadius:3, order:1}, {label:'Resigns', data:resignsData, backgroundColor:'#dc3545', borderRadius:3, order:2} ] }, options: { responsive:true, maintainAspectRatio:false, plugins:{ datalabels:{color:'white', font:{weight:'bold'}, formatter:(v, ctx)=>ctx.dataset.type==='line'?'':(v>0?v:'')} }, scales:{x:{stacked:true, grid:{display:false}}, y:{stacked:true}}, onClick: (e, elements) => { if (elements.length > 0) { let index = elements[0].index; openDailyDetailModal(keys[index]); } } } }); }
     }
@@ -888,7 +960,7 @@
                    let gap = v.a - v.t; let gapClass = gap < 0 ? 'text-danger fw-bold' : (gap > 0 ? 'text-success fw-bold' : ''); let gapStr = gap > 0 ? `+${gap}` : gap;
                    let pct = v.t > 0 ? (v.a/v.t)*100 : 0; let barColor = pct >= 100 ? 'bg-success' : (pct >= 90 ? 'bg-warning' : 'bg-danger'); let bar = `<div class="progress" style="height:6px; width:80px; margin:auto;"><div class="progress-bar ${barColor}" style="width:${pct}%"></div></div>`; let ptVal = v.pt || 0; let totalAll = v.a + ptVal; 
                    subTotal.t += v.t; subTotal.a += v.a; subTotal.w += v.w; subTotal.pt += ptVal; 
-                   html += `<tr class="clickable-row" onclick="openDetailModal('dept', '${escapeStr(v.name)}')"><td class="text-start ps-4">${v.name}</td><td>${v.t}</td><td>${v.a}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${v.w}</td><td class="fw-bold" style="color:#6610f2">${ptVal}</td><td class="fw-bold">${totalAll}</td><td>${bar} <span style="font-size:0.8em">${pct.toFixed(0)}%</span></td></tr>`;
+                   html += `<tr class="clickable-row" onclick="openDetailModal('dept', '${escapeStr(v.name)}')"><td class="text-start ps-4">${escapeHTML(v.name)}</td><td>${v.t}</td><td>${v.a}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${v.w}</td><td class="fw-bold" style="color:#6610f2">${ptVal}</td><td class="fw-bold">${totalAll}</td><td>${bar} <span style="font-size:0.8em">${pct.toFixed(0)}%</span></td></tr>`;
                });
                let subPct = subTotal.t > 0 ? (subTotal.a/subTotal.t)*100 : 0; let subTotalAll = subTotal.a + subTotal.pt; let subGap = subTotal.a - subTotal.t; let subGapStr = subGap > 0 ? `+${subGap}` : subGap; let subGapClass = subGap < 0 ? 'text-danger' : (subGap > 0 ? 'text-success' : '');
                html += `<tr class="table-light fw-bold border-top"><td class="text-start ps-3">Total ${group}</td><td>${subTotal.t}</td><td>${subTotal.a}</td><td class="${subGapClass}">${subGapStr}</td><td class="text-warning">${subTotal.w}</td><td style="color:#6610f2">${subTotal.pt}</td><td>${subTotalAll}</td><td>${subPct.toFixed(0)}%</td></tr>`;
@@ -905,18 +977,30 @@
        entries.forEach(([no, v]) => {
          let pct = v.t > 0 ? (v.a/v.t)*100 : 0; let barColor = pct >= 100 ? 'bg-success' : (pct >= 90 ? 'bg-warning' : 'bg-danger'); let bar = `<div class="progress" style="height:6px; width:80px; margin:auto;"><div class="progress-bar ${barColor}" style="width:${pct}%"></div></div>`;
          let gap = v.a - v.t; let gapClass = gap < 0 ? 'text-danger fw-bold' : (gap > 0 ? 'text-success fw-bold' : ''); let gapStr = gap > 0 ? `+${gap}` : gap; let ptCount = processedData.ptStore[no] || 0; let totalAll = v.a + ptCount; 
-         html += `<tr class="clickable-row" onclick="openDetailModal('store', '${escapeStr(no)}')"><td class="text-start ps-3" data-order="${no}">${no} - ${v.name}</td><td>${v.t}</td><td>${v.a}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${v.w}</td> <td class="fw-bold" style="color:#6610f2">${ptCount}</td><td class="fw-bold">${totalAll}</td><td>${bar} <span style="font-size:0.8em">${pct.toFixed(0)}%</span></td></tr>`;
+         html += `<tr class="clickable-row" onclick="openDetailModal('store', '${escapeStr(no)}')"><td class="text-start ps-3" data-order="${no}">${no} - ${escapeHTML(v.name)}</td><td>${v.t}</td><td>${v.a}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${v.w}</td> <td class="fw-bold" style="color:#6610f2">${ptCount}</td><td class="fw-bold">${totalAll}</td><td>${bar} <span style="font-size:0.8em">${pct.toFixed(0)}%</span></td></tr>`;
        });
-       if($.fn.DataTable.isDataTable('#storeTable')) $('#storeTable').DataTable().destroy();
-       $('#storeTable tbody').html(html); $('#storeTable').DataTable({ paging: false, dom: 't', order: [[0, 'asc']] });
+       
+       if (!$.fn.DataTable.isDataTable('#storeTable')) {
+           $('#storeTable tbody').html(html); 
+           $('#storeTable').DataTable({ paging: false, dom: 't', order: [[0, 'asc']] });
+       } else {
+           let table = $('#storeTable').DataTable();
+           table.clear();
+           if(html !== '') { table.rows.add($(html)); }
+           table.draw();
+       }
     }
 
     // --- 🌟 EXECUTIVE FUNCTIONS ---
     function applyExecFilters() {
-        console.log('[4. Data Received / Filtered] Processing new dataset (Executive)...');
         let dStartVal = $('#execDateStart').val(); let dEndVal = $('#execDateEnd').val();
         if(dStartVal && dEndVal && new Date(dStartVal) > new Date(dEndVal)) { let temp = dStartVal; dStartVal = dEndVal; dEndVal = temp; $('#execDateStart').val(dStartVal); $('#execDateEnd').val(dEndVal); }
-        if(!dStartVal) { let def = new Date(2026, 0, 1); dStartVal = formatDateIso(def); document.getElementById('execDateStart').valueAsDate = def; }
+        if(!dStartVal) { 
+            let currentYear = new Date().getFullYear();
+            let def = new Date(currentYear, 0, 1); 
+            dStartVal = formatDateIso(def); 
+            document.getElementById('execDateStart').valueAsDate = def; 
+        }
         if(!dEndVal) { let today = new Date(); dEndVal = formatDateIso(today); document.getElementById('execDateEnd').valueAsDate = today; }
         const dStart = new Date(dStartVal); dStart.setHours(0,0,0,0); const dEnd = new Date(dEndVal); dEnd.setHours(23,59,59,999);
         const scopeValue = $('#selExecScope').val(); 
@@ -931,8 +1015,12 @@
 
         let metrics = { applied:0, passed:0, onboard:0, wait:0, waitThisWeek:0, waitNextWeek:0, waitFuture:0 };
         
-        const allowedMapping = { "support": ["goods receiving", "alc"], "floor": ["fruit & vegetable", "seafood", "butchery", "frozen", "bakery", "dry food 1", "dry food 2", "non food 1", "non food 2", "non fresh", "ff sales specialist", "fresh food"], "o2o": ["picker", "packer", "loader", "admin o2o", "o2o operation", "o2o delivery", "ocs", "ofm / hub manager"], "b2b": ["b2b"], "credit": ["credit sales", "key account"] };
-        function isAllowed(deptRaw) { if(!deptRaw) return false; let d = deptRaw.toLowerCase(); if(d.includes("(club)")) return false; for(let key in allowedMapping) { if(allowedMapping[key].some(x => d.includes(x))) return true; } return false; }
+        // 🌟 FIX: เปลี่ยนไปเรียกใช้ Config จากตัวแปร Global EXEC_DEPT_MAPPING
+        function isAllowed(deptRaw) { 
+            if(!deptRaw) return false; let d = deptRaw.toLowerCase(); if(d.includes("(club)")) return false; 
+            for(let key in window.EXEC_DEPT_MAPPING) { if(window.EXEC_DEPT_MAPPING[key].some(x => d.includes(x))) return true; } 
+            return false; 
+        }
 
         let activeEndMap = {}; let hiresMap = {}; 
         rawData.staff.forEach(s => {
@@ -944,11 +1032,20 @@
              }
         });
         
-        let depts = {}; 
+        let depts = {}; let exportData = {};
         rawData.targets.forEach(t => {
             if(!checkChipMatch(t.storeNo, t.dept, t, activeFilters)) return;
             let k = cleanStr(t.dept);
-            if(isAllowed(k)) { if(!depts[k]) depts[k] = { t:0, a:0, w:0, delta:0 }; depts[k].t += t.target; }
+            if(isAllowed(k)) { 
+                if(!depts[k]) depts[k] = { t:0, a:0, w:0, delta:0 }; 
+                depts[k].t += t.target; 
+                
+                // สกัดข้อมูลเตรียม Export Breakdown 
+                let groupName = k; let lowerK = k.toLowerCase();
+                for(let key in window.EXEC_DEPT_MAPPING) { if(window.EXEC_DEPT_MAPPING[key].some(x => lowerK.includes(x))) { if(key === "b2b") groupName = "B2B Sales"; else if(key === "credit") groupName = "Credit Sales"; else if(lowerK.includes("alc")) groupName = "ALC"; else if(lowerK.includes("ocs")) groupName = "OCS"; break; } }
+                let s = cleanStr(t.storeNo); if(!exportData[groupName]) exportData[groupName] = {}; if(!exportData[groupName][s]) exportData[groupName][s] = { name: t.storeName, area: t.area, t:0, a:0, w:0 };
+                exportData[groupName][s].t += t.target;
+            }
         });
 
         let allDepts = new Set([...Object.keys(depts), ...Object.keys(activeEndMap), ...Object.keys(hiresMap)]);
@@ -971,6 +1068,31 @@
              }
         });
 
+        // สกัด Active และ Waiting สำหรับ Export
+        rawData.staff.forEach(s => {
+             if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return;
+             let k = cleanStr(s.dept); if(!isAllowed(k)) return;
+             let jd = parsePastDate(s.joinDate); let td = parsePastDate(s.termDate);
+             if (jd && jd <= dEnd && (!td || td > dEnd)) {
+                 let groupName = k; let lowerK = k.toLowerCase();
+                 for(let key in window.EXEC_DEPT_MAPPING) { if(window.EXEC_DEPT_MAPPING[key].some(x => lowerK.includes(x))) { if(key === "b2b") groupName = "B2B Sales"; else if(key === "credit") groupName = "Credit Sales"; else if(lowerK.includes("alc")) groupName = "ALC"; else if(lowerK.includes("ocs")) groupName = "OCS"; break; } }
+                 let sNo = cleanStr(s.storeNo); let meta = storeMetaMap[sNo] || {}; let sName = meta.name || sNo || "Unknown"; let sArea = meta.area || "";
+                 if(!exportData[groupName]) exportData[groupName] = {}; if(!exportData[groupName][sNo]) exportData[groupName][sNo] = { name: sName, area: sArea, t:0, a:0, w:0 };
+                 exportData[groupName][sNo].a += 1;
+             }
+        });
+        rawData.applicants.forEach(a => {
+             if(!checkChipMatch(a.storeNo, a.dept, a, activeFilters)) return;
+             let k = cleanStr(a.dept); if(!isAllowed(k)) return; let sDate = parseDateStrict(a.startDate);
+             if(sDate && sDate > today) {
+                 let groupName = k; let lowerK = k.toLowerCase();
+                 for(let key in window.EXEC_DEPT_MAPPING) { if(window.EXEC_DEPT_MAPPING[key].some(x => lowerK.includes(x))) { if(key === "b2b") groupName = "B2B Sales"; else if(key === "credit") groupName = "Credit Sales"; else if(lowerK.includes("alc")) groupName = "ALC"; else if(lowerK.includes("ocs")) groupName = "OCS"; break; } }
+                 let sNo = cleanStr(a.storeNo); let meta = storeMetaMap[sNo] || {}; let sName = meta.name || sNo || "Unknown"; let sArea = meta.area || "";
+                 if(!exportData[groupName]) exportData[groupName] = {}; if(!exportData[groupName][sNo]) exportData[groupName][sNo] = { name: sName, area: sArea, t:0, a:0, w:0 };
+                 exportData[groupName][sNo].w += 1;
+             }
+        });
+
         let dObj = {}; let hires = 0, resigns = 0;
         rawData.staff.forEach(s => {
              if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return;
@@ -989,12 +1111,18 @@
         let net = hires - resigns; let netColor = net > 0 ? 'text-success' : (net < 0 ? 'text-danger' : 'text-secondary'); let netSign = net > 0 ? '+' : '';
         $('#execDailySummary').html(`<small class="fw-bold text-success"><i class="bi bi-arrow-up"></i> Hires: ${hires}</small><small class="fw-bold text-danger ps-2"><i class="bi bi-arrow-down"></i> Resigns: ${resigns}</small><small class="fw-bold ${netColor} border-start ps-2 ms-2">Net: ${netSign}${net}</small>`);
 
-        console.log('[5. Chart Redraw] Updating Executive UI...');
+        // 🌟 เซฟเข้า processedData ไว้ให้ Export ดึงไปใช้
+        processedData.execBreakdown = exportData;
+        processedData.execDailyData = dObj;
+
         renderExecTable(depts); renderExecDailyChart(keys, dailyData);
     }
     
     function resetExecFilters() {
-        let today = new Date(); let startDef = new Date(2026, 0, 1);
+        let today = new Date(); 
+        let currentYear = new Date().getFullYear();
+        let startDef = new Date(currentYear, 0, 1);
+        
         document.getElementById('execDateEnd').valueAsDate = today; document.getElementById('execDateStart').valueAsDate = startDef;
         $('#selExecScope').val('all'); handleScopeChange(true, true);
         const defaultChecks = ["Temporary", "Staff", "Officer", "Supv.", "SM"];
@@ -1003,51 +1131,10 @@
 
     function exportExecBreakdown() {
         let wb = XLSX.utils.book_new();
-        let dStartVal = $('#execDateStart').val(); let dEndVal = $('#execDateEnd').val();
-        if(dStartVal && dEndVal && new Date(dStartVal) > new Date(dEndVal)) { let temp = dStartVal; dStartVal = dEndVal; dEndVal = temp; }
-        const dStart = new Date(dStartVal); dStart.setHours(0,0,0,0); const dEnd = new Date(dEndVal); dEnd.setHours(23,59,59,999);
-        const scopeValue = $('#selExecScope').val(); 
-        let selectedLevels = []; $('.chk-ExecLevel:checked').each(function() { selectedLevels.push(cleanStr($(this).val())); });
-        const activeFilters = { fmt: getActiveChips('execChipFormat'), od: getActiveChips('execChipOD'), pos: getActiveChips('execChipPosFocus'), area: getSelectedValues('ExecArea'), store: getSelectedValues('ExecStore'), dept: getSelectedValues('ExecDept'), isFocus: scopeValue, levels: selectedLevels };
+        let dEndVal = $('#execDateEnd').val();
         
-        const allowedMapping = { "support": ["goods receiving", "alc"], "floor": ["fruit & vegetable", "seafood", "butchery", "frozen", "bakery", "dry food 1", "dry food 2", "non food 1", "non food 2", "non fresh", "ff sales specialist", "fresh food"], "o2o": ["picker", "packer", "loader", "admin o2o", "o2o operation", "o2o delivery", "ocs", "ofm / hub manager"], "b2b": ["b2b"], "credit": ["credit sales", "key account"] };
-        function isAllowed(deptRaw) { if(!deptRaw) return false; let d = deptRaw.toLowerCase(); if(d.includes("(club)")) return false; for(let key in allowedMapping) { if(allowedMapping[key].some(x => d.includes(x))) return true; } return false; }
-        let exportData = {}; 
-
-        rawData.targets.forEach(t => {
-            if(!checkChipMatch(t.storeNo, t.dept, t, activeFilters)) return;
-            let k = cleanStr(t.dept); if(!isAllowed(k)) return;
-            let groupName = k; let lowerK = k.toLowerCase();
-            for(let key in allowedMapping) { if(allowedMapping[key].some(x => lowerK.includes(x))) { if(key === "b2b") groupName = "B2B Sales"; else if(key === "credit") groupName = "Credit Sales"; else if(lowerK.includes("alc")) groupName = "ALC"; else if(lowerK.includes("ocs")) groupName = "OCS"; break; } }
-            let s = cleanStr(t.storeNo); if(!exportData[groupName]) exportData[groupName] = {}; if(!exportData[groupName][s]) exportData[groupName][s] = { name: t.storeName, area: t.area, t:0, a:0, w:0 };
-            exportData[groupName][s].t += t.target;
-        });
-
-        rawData.staff.forEach(s => {
-             if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return;
-             let k = cleanStr(s.dept); if(!isAllowed(k)) return;
-             let jd = parsePastDate(s.joinDate); let td = parsePastDate(s.termDate);
-             if (jd && jd <= dEnd && (!td || td > dEnd)) {
-                 let groupName = k; let lowerK = k.toLowerCase();
-                 for(let key in allowedMapping) { if(allowedMapping[key].some(x => lowerK.includes(x))) { if(key === "b2b") groupName = "B2B Sales"; else if(key === "credit") groupName = "Credit Sales"; else if(lowerK.includes("alc")) groupName = "ALC"; else if(lowerK.includes("ocs")) groupName = "OCS"; break; } }
-                 let sNo = cleanStr(s.storeNo); let meta = storeMetaMap[sNo] || {}; let sName = meta.name || sNo || "Unknown"; let sArea = meta.area || "";
-                 if(!exportData[groupName]) exportData[groupName] = {}; if(!exportData[groupName][sNo]) exportData[groupName][sNo] = { name: sName, area: sArea, t:0, a:0, w:0 };
-                 exportData[groupName][sNo].a += 1;
-             }
-        });
-
-        let today = new Date(); today.setHours(0,0,0,0);
-        rawData.applicants.forEach(a => {
-             if(!checkChipMatch(a.storeNo, a.dept, a, activeFilters)) return;
-             let k = cleanStr(a.dept); if(!isAllowed(k)) return; let sDate = parseDateStrict(a.startDate);
-             if(sDate && sDate > today) {
-                 let groupName = k; let lowerK = k.toLowerCase();
-                 for(let key in allowedMapping) { if(allowedMapping[key].some(x => lowerK.includes(x))) { if(key === "b2b") groupName = "B2B Sales"; else if(key === "credit") groupName = "Credit Sales"; else if(lowerK.includes("alc")) groupName = "ALC"; else if(lowerK.includes("ocs")) groupName = "OCS"; break; } }
-                 let sNo = cleanStr(a.storeNo); let meta = storeMetaMap[sNo] || {}; let sName = meta.name || sNo || "Unknown"; let sArea = meta.area || "";
-                 if(!exportData[groupName]) exportData[groupName] = {}; if(!exportData[groupName][sNo]) exportData[groupName][sNo] = { name: sName, area: sArea, t:0, a:0, w:0 };
-                 exportData[groupName][sNo].w += 1;
-             }
-        });
+        // 🌟 ดึงข้อมูลมาจาก processedData.execBreakdown เลย ไม่ต้องเช็คเงื่อนไข Filter ซ้ำ
+        let exportData = processedData.execBreakdown || {};
 
         Object.keys(exportData).sort().forEach(deptName => {
             let ws_data = [["Store No", "Store Name", "Area", "Target", "Active", "Vacancy", "Wait", "Fill Rate"]]; let stores = exportData[deptName];
@@ -1055,7 +1142,7 @@
             let ws = XLSX.utils.aoa_to_sheet(ws_data); styleSheet(ws); let safeName = deptName.replace(/[\\/?*\[\]]/g, "").substring(0, 30);
             XLSX.utils.book_append_sheet(wb, ws, safeName);
         });
-        XLSX.writeFile(wb, "Exec_Breakdown_" + formatDateIso(dEnd) + ".xlsx");
+        XLSX.writeFile(wb, "Exec_Breakdown_" + dEndVal + ".xlsx");
     }
 
     function renderExecTable(depts) {
@@ -1089,7 +1176,7 @@
                         let rowClasses = sub.flatten ? `group-${group.id}` : `sub-${sub.id}`;
                         let displayName = searchStr.charAt(0).toUpperCase() + searchStr.slice(1);
                         if(searchStr === "b2b") displayName = "B2B Sales"; if(searchStr === "credit") displayName = "Credit Sales"; if(searchStr === "alc") displayName = "ALC"; if(searchStr === "ocs") displayName = "OCS"; if(searchStr === "admin o2o") displayName = "Admin O2O";
-                        subHtml += `<tr class="tree-row-l3 ${rowClasses} hidden-row"><td class="text-start ps-5">${displayName}</td><td>${v.t}</td><td>${v.a} ${diffHtml}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${v.w}</td><td>${bar} <span style="font-size:0.8em">${pct.toFixed(0)}%</span></td></tr>`;
+                        subHtml += `<tr class="tree-row-l3 ${rowClasses} hidden-row"><td class="text-start ps-5">${escapeHTML(displayName)}</td><td>${v.t}</td><td>${v.a} ${diffHtml}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${v.w}</td><td>${bar} <span style="font-size:0.8em">${pct.toFixed(0)}%</span></td></tr>`;
                     }
                 });
                 
@@ -1098,7 +1185,7 @@
                     if (!sub.flatten) {
                         let subGap = subTotal.a - subTotal.t; let subGapClass = subGap < 0 ? 'text-danger fw-bold' : (subGap > 0 ? 'text-success' : ''); let subGapStr = subGap > 0 ? `+${subGap}` : subGap;
                         let subPct = subTotal.t > 0 ? (subTotal.a/subTotal.t)*100 : 0; let subDiffHtml = subTotal.delta > 0 ? `<span class="text-success ms-1" style="font-size:0.75rem;">▲${subTotal.delta}</span>` : ''; let subBarColor = subPct >= 100 ? 'bg-success' : (subPct >= 90 ? 'bg-warning' : 'bg-danger'); let subBar = `<div class="progress" style="height:6px; width:60px; margin:auto;"><div class="progress-bar ${subBarColor}" style="width:${subPct}%"></div></div>`;
-                        groupHtml += `<tr class="tree-row-l2 group-${group.id} hidden-row tree-toggle" style="background-color: ${sub.bg}" onclick="toggleRow('sub-${sub.id}', this.querySelector('.tree-icon'))"><td class="text-start ps-4"><i class="bi bi-caret-right-fill tree-icon me-2"></i>${sub.label}</td><td>${subTotal.t}</td><td class="fw-bold">${subTotal.a} ${subDiffHtml}</td><td class="${subGapClass}">${subGapStr}</td><td class="text-warning">${subTotal.w}</td><td>${subBar} <span style="font-size:0.8em">${subPct.toFixed(0)}%</span></td></tr>`;
+                        groupHtml += `<tr class="tree-row-l2 group-${group.id} hidden-row tree-toggle" style="background-color: ${sub.bg}" onclick="toggleRow('sub-${sub.id}', this.querySelector('.tree-icon'))"><td class="text-start ps-4"><i class="bi bi-caret-right-fill tree-icon me-2"></i>${escapeHTML(sub.label)}</td><td>${subTotal.t}</td><td class="fw-bold">${subTotal.a} ${subDiffHtml}</td><td class="${subGapClass}">${subGapStr}</td><td class="text-warning">${subTotal.w}</td><td>${subBar} <span style="font-size:0.8em">${subPct.toFixed(0)}%</span></td></tr>`;
                     }
                     groupTotal.t += Number(subTotal.t); groupTotal.a += Number(subTotal.a); groupTotal.w += Number(subTotal.w); groupTotal.delta += Number(subTotal.delta);
                     groupHtml += subHtml; 
@@ -1108,7 +1195,7 @@
             if (hasData) {
                 let grpGap = groupTotal.a - groupTotal.t; let grpGapClass = grpGap < 0 ? 'text-danger fw-bold' : (grpGap > 0 ? 'text-success' : ''); let grpGapStr = grpGap > 0 ? `+${grpGap}` : grpGap;
                 let grpPct = groupTotal.t > 0 ? (groupTotal.a / groupTotal.t) * 100 : 0; let grpDiffHtml = groupTotal.delta > 0 ? `<span class="text-success ms-1" style="font-size:0.75rem;">▲${groupTotal.delta}</span>` : ''; let grpBarColor = grpPct >= 100 ? 'bg-success' : (grpPct >= 90 ? 'bg-warning' : 'bg-danger'); let grpBar = `<div class="progress" style="height:6px; width:60px; margin:auto;"><div class="progress-bar ${grpBarColor}" style="width:${grpPct}%"></div></div>`;
-                html += `<tr class="tree-row-l1 tree-toggle" style="background-color: ${group.bg};" onclick="toggleRow('group-${group.id}', this.querySelector('.tree-icon'))"><td class="text-start ps-3"><i class="bi bi-caret-right-fill tree-icon me-2 expanded"></i>${group.label}</td><td>${groupTotal.t}</td><td class="fw-bold">${groupTotal.a} ${grpDiffHtml}</td><td class="${grpGapClass}">${grpGapStr}</td><td class="text-warning">${groupTotal.w}</td><td>${grpBar} <span style="font-size:0.8em">${grpPct.toFixed(0)}%</span></td></tr>`;
+                html += `<tr class="tree-row-l1 tree-toggle" style="background-color: ${group.bg};" onclick="toggleRow('group-${group.id}', this.querySelector('.tree-icon'))"><td class="text-start ps-3"><i class="bi bi-caret-right-fill tree-icon me-2 expanded"></i>${escapeHTML(group.label)}</td><td>${groupTotal.t}</td><td class="fw-bold">${groupTotal.a} ${grpDiffHtml}</td><td class="${grpGapClass}">${grpGapStr}</td><td class="text-warning">${groupTotal.w}</td><td>${grpBar} <span style="font-size:0.8em">${grpPct.toFixed(0)}%</span></td></tr>`;
                 html += groupHtml; 
                 grandTotal.t += Number(groupTotal.t); grandTotal.a += Number(groupTotal.a); grandTotal.w += Number(groupTotal.w); grandTotal.delta += Number(groupTotal.delta); 
             }
@@ -1128,17 +1215,13 @@
 
     function exportSectionExecDaily() {
          let wb = XLSX.utils.book_new(); let dailyRows = [["Date", "Hires", "Resigns", "Net"]];
-         let dStartVal = $('#execDateStart').val(); let dEndVal = $('#execDateEnd').val();
-         let dStart = new Date(dStartVal); dStart.setHours(0,0,0,0); let dEnd = new Date(dEndVal); dEnd.setHours(23,59,59,999);
-         let dObj = {}; const scopeValue = $('#selExecScope').val(); 
-         let selectedLevels = []; $('.chk-ExecLevel:checked').each(function() { selectedLevels.push(cleanStr($(this).val())); });
-         const activeFilters = { fmt: getActiveChips('execChipFormat'), od: getActiveChips('execChipOD'), pos: getActiveChips('execChipPosFocus'), area: getSelectedValues('ExecArea'), store: getSelectedValues('ExecStore'), dept: getSelectedValues('ExecDept'), isFocus: scopeValue, levels: selectedLevels };
-         rawData.staff.forEach(s => { if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return; let jd = parsePastDate(s.joinDate); let rd = parsePastDate(s.termDate); if(jd && jd >= dStart && jd <= dEnd) { let k = formatDateIso(jd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].in++; } if(rd && rd >= dStart && rd <= dEnd) { let k = formatDateIso(rd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].out++; } });
+         // 🌟 ดึงข้อมูลมาจาก processedData.execDailyData ที่เตรียมไว้แล้ว
+         let dObj = processedData.execDailyData || {};
          Object.keys(dObj).sort().forEach(k => { let r = dObj[k]; dailyRows.push([k, r.in, r.out, r.in - r.out]); });
          let ws = XLSX.utils.aoa_to_sheet(dailyRows); styleSheet(ws); XLSX.utils.book_append_sheet(wb, ws, "Executive Daily Movement"); XLSX.writeFile(wb, "Exec_Daily_Movement.xlsx");
     }
 
-    // --- MODALS & DRILLDOWNS (ALL INCLUDED) ---
+    // --- MODALS & DRILLDOWNS ---
     function showModal() { if (!bsModal) { bsModal = new bootstrap.Modal(document.getElementById('detailModal')); } bsModal.show(); }
     
     function handleModalBack() { 
@@ -1162,7 +1245,6 @@
                     modalTableData.push({ label: `${sNo} - ${sVal.name}`, area: meta.area || "", t: d.t, a: d.a, gap: d.a - d.t, w: d.w, pt: d.pt || 0, total: d.a + (d.pt || 0), rate: d.t > 0 ? (d.a / d.t) * 100 : 0 });
                 }
             });
-            // 🌟 แก้ไข: บังคับให้หน้า Drill-down ของตำแหน่ง เริ่มต้นเรียงตามสาขาเลย
             modalSortState = { col: 'label', asc: true }; 
         }
         $('#detailModalTitle').text(title); $('#btnModalBack').hide(); renderSortableModal(); showModal();
@@ -1178,7 +1260,6 @@
         
         modalTableData.sort((a, b) => { 
             let valA = a[modalSortState.col]; let valB = b[modalSortState.col]; 
-            // 🌟 แก้ไข: ถ้ากดหัวตาราง 'Store' ให้แยกตัวเลขหน้าขีดเพื่อเอามาเปรียบเทียบค่า
             if (modalSortState.col === 'label' && currentDrillType === 'dept') {
                 valA = parseInt(a.label.split(' ')[0]); valB = parseInt(b.label.split(' ')[0]);
             } else if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = valB.toLowerCase(); } 
@@ -1189,8 +1270,8 @@
         let tbodyHtml = '';
         if (modalTableData.length === 0) { tbodyHtml = `<tr><td colspan="${columns.length}">No data found.</td></tr>`; } else {
             modalTableData.forEach(row => {
-                let gapClass = row.gap < 0 ? 'text-danger fw-bold' : (row.gap > 0 ? 'text-success' : ''); let gapStr = row.gap > 0 ? `+${row.gap}` : row.gap; let rateColor = row.rate >= 100 ? 'text-success' : (row.rate < 90 ? 'text-danger' : 'text-warning'); let extraCol = isStoreDrill ? `<td>${row.area}</td>` : '';
-                tbodyHtml += `<tr><td class="text-start ps-4 text-primary fw-bold">${row.label}</td>${extraCol}<td>${row.t}</td><td>${row.a}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${row.w}</td><td style="color:#6610f2">${row.pt}</td><td class="fw-bold">${row.total}</td><td class="${rateColor} fw-bold">${row.rate.toFixed(0)}%</td></tr>`;
+                let gapClass = row.gap < 0 ? 'text-danger fw-bold' : (row.gap > 0 ? 'text-success' : ''); let gapStr = row.gap > 0 ? `+${row.gap}` : row.gap; let rateColor = row.rate >= 100 ? 'text-success' : (row.rate < 90 ? 'text-danger' : 'text-warning'); let extraCol = isStoreDrill ? `<td>${escapeHTML(row.area)}</td>` : '';
+                tbodyHtml += `<tr><td class="text-start ps-4 text-primary fw-bold">${escapeHTML(row.label)}</td>${extraCol}<td>${row.t}</td><td>${row.a}</td><td class="${gapClass}">${gapStr}</td><td class="text-warning fw-bold">${row.w}</td><td style="color:#6610f2">${row.pt}</td><td class="fw-bold">${row.total}</td><td class="${rateColor} fw-bold">${row.rate.toFixed(0)}%</td></tr>`;
             });
         }
         $('#detailModalBody').html(tbodyHtml);
@@ -1219,7 +1300,7 @@
             if(sDate && sDate >= dStart && sDate <= dEnd) storeData[sKey].onb++; 
         }); 
         let sorted = Object.entries(storeData).sort((a,b) => parseInt(a[0]) - parseInt(b[0])); let html = ''; 
-        sorted.forEach(([k, v]) => { if(v.app>0||v.int>0||v.pass>0||v.onb>0) { let rate = v.app>0 ? ((v.onb/v.app)*100).toFixed(1) : "0.0"; html += `<tr class="clickable-row" onclick="openFunnelStoreDrillDown('${k}', '${escapeStr(v.name)}')"><td class="text-start ps-4 fw-bold text-primary">${v.name} <i class="bi bi-caret-right-fill small"></i></td><td>${v.app}</td><td>${v.int}</td><td>${v.pass}</td><td>${v.onb}</td><td class="fw-bold text-success">${rate}%</td></tr>`; } }); 
+        sorted.forEach(([k, v]) => { if(v.app>0||v.int>0||v.pass>0||v.onb>0) { let rate = v.app>0 ? ((v.onb/v.app)*100).toFixed(1) : "0.0"; html += `<tr class="clickable-row" onclick="openFunnelStoreDrillDown('${k}', '${escapeStr(v.name)}')"><td class="text-start ps-4 fw-bold text-primary">${escapeHTML(v.name)} <i class="bi bi-caret-right-fill small"></i></td><td>${v.app}</td><td>${v.int}</td><td>${v.pass}</td><td>${v.onb}</td><td class="fw-bold text-success">${rate}%</td></tr>`; } }); 
         $('#detailModalTitle').text('Recruitment Funnel - by Store'); $('#btnModalBack').hide(); $('#detailModalHead').html(`<tr><th class="text-start ps-4">Store</th><th>Applied</th><th>Interviewed</th><th>Passed</th><th>Onboarded</th><th>Success Rate</th></tr>`); $('#detailModalBody').html(html || '<tr><td colspan="6">No data found.</td></tr>'); showModal(); 
     }
 
@@ -1240,7 +1321,7 @@
             if(sDate && sDate >= dStart && sDate <= dEnd) deptData[dept].onb++; 
         }); 
         let sorted = Object.entries(deptData).sort((a,b) => a[0].localeCompare(b[0])); let html = ''; 
-        sorted.forEach(([d, v]) => { let rate = v.app>0 ? ((v.onb/v.app)*100).toFixed(1) : "0.0"; html += `<tr><td class="text-start ps-4">${d}</td><td>${v.app}</td><td>${v.int}</td><td>${v.pass}</td><td>${v.onb}</td><td class="fw-bold text-success">${rate}%</td></tr>`; }); 
+        sorted.forEach(([d, v]) => { let rate = v.app>0 ? ((v.onb/v.app)*100).toFixed(1) : "0.0"; html += `<tr><td class="text-start ps-4">${escapeHTML(d)}</td><td>${v.app}</td><td>${v.int}</td><td>${v.pass}</td><td>${v.onb}</td><td class="fw-bold text-success">${rate}%</td></tr>`; }); 
         $('#detailModalTitle').text(`${storeName} - Funnel Breakdown`); $('#btnModalBack').show(); $('#detailModalHead').html(`<tr><th class="text-start ps-4">Department</th><th>Applied</th><th>Interviewed</th><th>Passed</th><th>Onboarded</th><th>Success Rate</th></tr>`); $('#detailModalBody').html(html || '<tr><td colspan="6">No data found.</td></tr>'); 
     }
 
@@ -1270,7 +1351,7 @@
             }); 
         } 
         let sorted = Object.entries(storeData).sort((a,b) => parseInt(a[0]) - parseInt(b[0])); let html = ''; 
-        sorted.forEach(([k, v]) => { if(v.val > 0) { html += `<tr class="clickable-row" onclick="openKpiStoreDrillDown('${metric}', '${k}', '${escapeStr(v.name)}')"><td class="text-start ps-4 fw-bold text-primary">${v.name} <i class="bi bi-caret-right-fill small"></i></td><td class="fw-bold">${v.val}</td></tr>`; } }); 
+        sorted.forEach(([k, v]) => { if(v.val > 0) { html += `<tr class="clickable-row" onclick="openKpiStoreDrillDown('${metric}', '${k}', '${escapeStr(v.name)}')"><td class="text-start ps-4 fw-bold text-primary">${escapeHTML(v.name)} <i class="bi bi-caret-right-fill small"></i></td><td class="fw-bold">${v.val}</td></tr>`; } }); 
         $('#detailModalTitle').text(`${title} - by Store`); $('#btnModalBack').hide(); $('#detailModalHead').html('<tr><th class="text-start ps-4">Store (Click to Drill)</th><th>Count</th></tr>'); $('#detailModalBody').html(html || '<tr><td colspan="2">No records found.</td></tr>'); showModal(); 
     }
 
@@ -1300,7 +1381,7 @@
             } 
         } 
         let sorted = Object.entries(deptData).sort((a,b) => b[1] - a[1]); let html = ''; 
-        sorted.forEach(([d, val]) => { if(val > 0) html += `<tr><td class="text-start ps-4">${d}</td><td class="fw-bold">${val}</td></tr>`; }); 
+        sorted.forEach(([d, val]) => { if(val > 0) html += `<tr><td class="text-start ps-4">${escapeHTML(d)}</td><td class="fw-bold">${val}</td></tr>`; }); 
         $('#detailModalTitle').text(`${storeName} - Breakdown`); $('#btnModalBack').show(); $('#detailModalHead').html('<tr><th class="text-start ps-4">Department</th><th>Count</th></tr>'); $('#detailModalBody').html(html || '<tr><td colspan="2">No records found.</td></tr>'); 
     }
 
@@ -1320,10 +1401,11 @@
         let sortedDepts = Object.keys(counts).filter(d => counts[d].hires > 0 || counts[d].resigns > 0).sort(); let html = ''; 
         sortedDepts.forEach(d => { 
             let h = counts[d].hires; let r = counts[d].resigns; let net = h - r; let netColor = net > 0 ? 'text-success' : (net < 0 ? 'text-danger' : ''); let netSign = net > 0 ? '+' : ''; 
-            html += `<tr class="clickable-row" onclick="openStoreDrillDown('${dateKey}', '${escapeStr(d)}')"><td class="text-start ps-4 fw-bold text-primary">${d} <i class="bi bi-caret-right-fill small"></i></td><td class="text-success fw-bold">${h > 0 ? h : '-'}</td><td class="text-danger fw-bold">${r > 0 ? r : '-'}</td><td class="fw-bold ${netColor}">${net !== 0 ? netSign+net : '-'}</td></tr>`; 
+            html += `<tr class="clickable-row" onclick="openStoreDrillDown('${dateKey}', '${escapeStr(d)}')"><td class="text-start ps-4 fw-bold text-primary">${escapeHTML(d)} <i class="bi bi-caret-right-fill small"></i></td><td class="text-success fw-bold">${h > 0 ? h : '-'}</td><td class="text-danger fw-bold">${r > 0 ? r : '-'}</td><td class="fw-bold ${netColor}">${net !== 0 ? netSign+net : '-'}</td></tr>`; 
         }); 
         $('#detailModalTitle').text(`Daily Summary: ${dateKey}`); $('#btnModalBack').hide(); $('#detailModalHead').html('<tr><th class="text-start ps-4">Position (Click to Drill)</th><th>Hires</th><th>Resigns</th><th>Net</th></tr>'); $('#detailModalBody').html(html || '<tr><td colspan="4">No movement recorded.</td></tr>'); showModal(); 
     }
+
     function openPartTimeDrillDown(dateKey) {
         modalState.type = 'parttime'; modalState.key = dateKey;
         let clickedDate = new Date(dateKey); 
@@ -1340,7 +1422,6 @@
             if(ptDate && ptDate >= dStart && ptDate <= dEnd) {
                 let sKey = cleanStr(pt.storeNo); 
                 let sName = (storeMetaMap[sKey] ? storeMetaMap[sKey].name : sKey) || "Unknown"; 
-                // บันทึก sKey เพื่อนำไปใช้ Sort เป็นตัวเลข
                 if(!storeStats[sKey]) storeStats[sKey] = { storeNo: sKey, name: `${sKey} - ${sName}`, temp: 0, student: 0, elderly: 0, other: 0, total: 0 }; 
                 let t = parseInt(pt.temp) || 0; let s = parseInt(pt.student) || 0; let e = parseInt(pt.elderly) || 0; let sumAll = t + s + e;
                 let reportedTotal = parseInt(pt.total) || 0; let diff = reportedTotal - sumAll; let o = diff > 0 ? diff : 0; 
@@ -1348,14 +1429,13 @@
             }
         });
 
-        // 🌟 แก้ไข: จัดเรียงสาขาตามรหัสร้าน (1, 2, 3...) ไม่ใช่จำนวนคนแล้ว
         let sortedStores = Object.values(storeStats).filter(d => d.total > 0).sort((a,b) => parseInt(a.storeNo) - parseInt(b.storeNo)); 
         
         let html = ''; let grandTotal = { temp: 0, student: 0, elderly: 0, other: 0, total: 0 };
         sortedStores.forEach(row => { 
             grandTotal.temp += row.temp; grandTotal.student += row.student; grandTotal.elderly += row.elderly; grandTotal.other += row.other; grandTotal.total += row.total;
             let otherHtml = row.other > 0 ? ` (+${row.other} อื่นๆ)` : '';
-            html += `<tr><td class="text-start ps-4 fw-bold text-primary">${row.name}</td><td style="color:#0dcaf0" class="fw-bold">${row.temp > 0 ? row.temp : '-'}</td><td style="color:#fd7e14" class="fw-bold">${row.student > 0 ? row.student : '-'}</td><td style="color:#6f42c1" class="fw-bold">${row.elderly > 0 ? row.elderly : '-'}</td><td class="fw-bold bg-light">${row.total} ${otherHtml}</td></tr>`; 
+            html += `<tr><td class="text-start ps-4 fw-bold text-primary">${escapeHTML(row.name)}</td><td style="color:#0dcaf0" class="fw-bold">${row.temp > 0 ? row.temp : '-'}</td><td style="color:#fd7e14" class="fw-bold">${row.student > 0 ? row.student : '-'}</td><td style="color:#6f42c1" class="fw-bold">${row.elderly > 0 ? row.elderly : '-'}</td><td class="fw-bold bg-light">${row.total} ${otherHtml}</td></tr>`; 
         }); 
         
         if (sortedStores.length > 0) {
@@ -1386,7 +1466,7 @@
         let sortedKeys = Object.keys(storeStats).filter(k => storeStats[k].hires > 0 || storeStats[k].resigns > 0).sort((a,b) => parseInt(a) - parseInt(b)); let html = ''; 
         sortedKeys.forEach(key => { 
             let item = storeStats[key]; let net = item.hires - item.resigns; let netColor = net > 0 ? 'text-success' : (net < 0 ? 'text-danger' : ''); let netSign = net > 0 ? '+' : ''; 
-            html += `<tr><td class="text-start ps-4">${item.name}</td><td class="text-success fw-bold">${item.hires > 0 ? item.hires : '-'}</td><td class="text-danger fw-bold">${item.resigns > 0 ? item.resigns : '-'}</td><td class="fw-bold ${netColor}">${net !== 0 ? netSign+net : '-'}</td></tr>`; 
+            html += `<tr><td class="text-start ps-4">${escapeHTML(item.name)}</td><td class="text-success fw-bold">${item.hires > 0 ? item.hires : '-'}</td><td class="text-danger fw-bold">${item.resigns > 0 ? item.resigns : '-'}</td><td class="fw-bold ${netColor}">${net !== 0 ? netSign+net : '-'}</td></tr>`; 
         }); 
         $('#detailModalTitle').text(`Details: ${deptName} (${dateKey})`); $('#btnModalBack').show(); $('#detailModalHead').html('<tr><th class="text-start ps-4">Store</th><th>Hires</th><th>Resigns</th><th>Net</th></tr>'); $('#detailModalBody').html(html || '<tr><td colspan="4">No data found.</td></tr>'); 
     }
@@ -1413,20 +1493,15 @@
             if(intDate && intDate >= dStart && intDate <= dEnd) { if(a.status.includes("ผ่าน") || a.startStatus.includes("รอ")) storeData[sKey].pass++; }
         });
         let sorted = Object.entries(storeData).filter(x => x[1].app > 0).sort((a,b) => b[1].app - a[1].app); let html = '';
-        sorted.forEach(([k, v]) => { let rate = v.app > 0 ? ((v.pass/v.app)*100).toFixed(1) : "0.0"; html += `<tr><td class="text-start ps-4">${v.name}</td><td>${v.app}</td><td>${v.pass}</td><td class="fw-bold text-success">${rate}%</td></tr>`; });
+        sorted.forEach(([k, v]) => { let rate = v.app > 0 ? ((v.pass/v.app)*100).toFixed(1) : "0.0"; html += `<tr><td class="text-start ps-4">${escapeHTML(v.name)}</td><td>${v.app}</td><td>${v.pass}</td><td class="fw-bold text-success">${rate}%</td></tr>`; });
         $('#detailModalTitle').text(`Source: ${sourceName}`); $('#btnModalBack').hide(); $('#detailModalHead').html('<tr><th class="text-start ps-4">Store</th><th>Applied</th><th>Passed</th><th>Pass Rate</th></tr>'); $('#detailModalBody').html(html || '<tr><td colspan="4">No data found.</td></tr>'); showModal();
     }
 
     // --- EXPORTS ---
     function exportToExcel() {
         let wb = XLSX.utils.book_new();
-        let dStartVal = $('#dateStart').val(); let dEndVal = $('#dateEnd').val();
-        if(dStartVal && dEndVal && new Date(dStartVal) > new Date(dEndVal)) { let temp = dStartVal; dStartVal = dEndVal; dEndVal = temp; }
-        const dStart = new Date(dStartVal); dStart.setHours(0,0,0,0); const dEnd = new Date(dEndVal); dEnd.setHours(23,59,59,999);
-        const scopeValue = $('#selStoreScope').val(); 
-        let selectedLevels = []; $('.chk-Level:checked').each(function() { selectedLevels.push(cleanStr($(this).val())); });
-        const activeFilters = { fmt: getActiveChips('chipFormat'), od: getActiveChips('chipOD'), pos: getActiveChips('chipPosFocus'), area: getSelectedValues('Area'), store: getSelectedValues('Store'), dept: getSelectedValues('Dept'), isFocus: scopeValue, levels: selectedLevels };
         
+        // 🌟 ดึงข้อมูลมาจาก processedData เลย ไม่ต้องวนลูปคำนวณซ้ำ
         let storeData = [["Store", "Area", "Target", "Active", "Vacancy", "Waiting", "PT", "FT + PT", "Readiness"]];
         Object.entries(processedData.stores).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).forEach(([no, v]) => {
             let meta = storeMetaMap[no] || {}; let area = meta.area || ""; let pct = v.t > 0 ? (v.a/v.t)*100 : 0; let vac = v.a - v.t; let pt = processedData.ptStore[no] || 0; let totalAll = v.a + pt;
@@ -1450,29 +1525,21 @@
         Object.entries(processedData.sources).forEach(([k, v]) => { let rate = v.app > 0 ? (v.pass/v.app)*100 : 0; srcRows.push([k, v.app, v.pass, rate.toFixed(1) + "%"]); });
         if (srcRows.length > 1) { let ws3 = XLSX.utils.aoa_to_sheet(srcRows); styleSheet(ws3); XLSX.utils.book_append_sheet(wb, ws3, "Sourcing"); }
 
-        let dailyRows = [["Date", "Hires", "Resigns", "Net"]]; let dObj = {};
-        rawData.staff.forEach(s => {
-            if(!checkChipMatch(s.storeNo, s.dept, s, activeFilters)) return;
-            let jd = parsePastDate(s.joinDate); let rd = parsePastDate(s.termDate);
-            if(jd && jd >= dStart && jd <= dEnd) { let k = formatDateIso(jd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].in++; }
-            if(rd && rd >= dStart && rd <= dEnd) { let k = formatDateIso(rd); if(!dObj[k]) dObj[k] = {in:0, out:0}; dObj[k].out++; }
+        let dailyRows = [["Date", "Hires", "Resigns", "Net"]]; 
+        Object.keys(processedData.dailyMovement).sort().forEach(k => { 
+            let r = processedData.dailyMovement[k]; 
+            dailyRows.push([k, r.in, r.out, r.in - r.out]); 
         });
-        Object.keys(dObj).sort().forEach(k => { let r = dObj[k]; dailyRows.push([k, r.in, r.out, r.in - r.out]); });
         if (dailyRows.length > 1) { let ws4 = XLSX.utils.aoa_to_sheet(dailyRows); styleSheet(ws4); XLSX.utils.book_append_sheet(wb, ws4, "Daily Movement"); }
         
-        let funnelData = {}; let funnelHeader = [["Store", "Area", "Department", "Position", "Interview Status", "Applied", "Interviewed", "Passed", "Onboarded"]];
-        rawData.applicants.forEach(a => {
-            if(!checkChipMatch(a.storeNo, a.dept, a, activeFilters)) return;
-            let sNo = cleanStr(a.storeNo); let meta = storeMetaMap[sNo] || {}; let sName = meta.name || sNo; let sArea = meta.area || "";
-            let dept = a.dept; let pos = a.position || "Unspecified"; let status = a.status || "Pending"; let key = `${sNo}|${dept}|${pos}|${status}`;
-            if (!funnelData[key]) { funnelData[key] = { store: `${sNo} - ${sName}`, area: sArea, dept: dept, pos: pos, status: status, applied: 0, interviewed: 0, passed: 0, onboarded: 0 }; }
-            let applyDate = parsePastDate(a.applyDate); let intDate = parsePastDate(a.interviewDate); let sDate = parseDateStrict(a.startDate);
-            if(applyDate && applyDate >= dStart && applyDate <= dEnd) { funnelData[key].applied++; }
-            if(intDate && intDate >= dStart && intDate <= dEnd) { funnelData[key].interviewed++; if(a.status.includes("ผ่าน") || a.startStatus.includes("รอ")) funnelData[key].passed++; }
-            if(sDate && sDate >= dStart && sDate <= dEnd) { funnelData[key].onboarded++; }
+        let funnelHeader = [["Store", "Area", "Department", "Position", "Interview Status", "Applied", "Interviewed", "Passed", "Onboarded"]];
+        Object.values(processedData.exportFunnel).forEach(row => { 
+            if (row.applied > 0 || row.interviewed > 0 || row.passed > 0 || row.onboarded > 0) { 
+                funnelHeader.push([ row.store, row.area, row.dept, row.pos, row.status, row.applied, row.interviewed, row.passed, row.onboarded ]); 
+            } 
         });
-        Object.values(funnelData).forEach(row => { if (row.applied > 0 || row.interviewed > 0 || row.passed > 0 || row.onboarded > 0) { funnelHeader.push([ row.store, row.area, row.dept, row.pos, row.status, row.applied, row.interviewed, row.passed, row.onboarded ]); } });
         if (funnelHeader.length > 1) { let wsFunnel = XLSX.utils.aoa_to_sheet(funnelHeader); styleSheet(wsFunnel); XLSX.utils.book_append_sheet(wb, wsFunnel, "Recruitment Funnel"); }
+        
         XLSX.writeFile(wb, "HR_Dashboard_Export.xlsx");
     }
     
