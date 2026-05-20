@@ -715,7 +715,7 @@
 
     const appState = {
         isLoading: true, activePage: 'operations', rawData: { targets: [], applicants: [], staff: [], parttime: [] },
-        storeMetaMap: {}, baseTargetKeys: new Set(),
+        storeMetaMap: {}, baseTargetKeys: new Set(), baseStoreKeys: new Set(),
         processedOps: { stores: {}, depts: {}, funnel: {}, sources: {}, metrics: {}, parttimeDaily: {}, ptStore: {}, ptDept: {}, dailyMovement: {}, exportFunnel: {} },
         processedExec: { breakdown: {}, dailyData: {}, metrics: {}, depts: {} },
         fillRateView: 'rate', modalState: { type: null, key: null, subKey: null }, modalTableData: [], modalSortState: { col: 'gap', asc: true }, charts: {}
@@ -831,7 +831,7 @@
     function initDashboard(payload) {
         let res = (typeof payload === 'string') ? JSON.parse(payload) : payload;
         if(res.error) { alert("Error: " + res.message); $('#loading').fadeOut(300); return; }
-        appState.rawData = res; appState.storeMetaMap = {}; appState.baseTargetKeys = new Set();
+        appState.rawData = res; appState.storeMetaMap = {}; appState.baseTargetKeys = new Set(); appState.baseStoreKeys = new Set();
         // 🌟 รองรับทั้ง subregion (ใหม่) และ area (เก่า) สำหรับ backward compat
         res.targets.forEach(d => { 
             let key = cleanStr(d.storeNo); 
@@ -843,7 +843,8 @@
                 name: d.storeName, 
                 focus: cleanStr(d.storeFocus) 
             }; 
-            appState.baseTargetKeys.add(key + "|" + cleanStr(d.dept).toLowerCase()); 
+            appState.baseTargetKeys.add(key + "|" + cleanStr(d.dept).toLowerCase());
+            appState.baseStoreKeys.add(key);
         });
         initFilters();
     }
@@ -917,7 +918,7 @@
 
     function checkChipMatch(storeNo, dept, recordMeta, filters) {
         const key  = cleanStr(storeNo); const d = cleanStr(dept).toLowerCase();
-        if (!appState.baseTargetKeys.has(key + "|" + d)) return false;
+        if (appState.baseStoreKeys.size > 0 && !appState.baseStoreKeys.has(key)) return false;
         const meta = appState.storeMetaMap[key] || { od: "", regionalCEO: "", subregion: "", format: "", focus: "" };
         if (filters.isFocus && filters.isFocus !== 'all') { let focusStr = (meta.focus || "").toString().toLowerCase(); let searchStr = filters.isFocus.toString().toLowerCase(); if (!focusStr.includes(searchStr)) return false; }
         const fmt = cleanStr(meta.format || (recordMeta && recordMeta.format) || ""); 
