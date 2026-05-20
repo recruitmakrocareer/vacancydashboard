@@ -1,0 +1,3355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turnover Control Tower</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+
+  <style>
+    :root { 
+      --brand-red: #C41E3A; 
+      --brand-red-light: #fef2f4; 
+      --primary-blue: #1B2A4A;
+      --primary-blue-light: #edf1f7;
+      --brand-green: #0D7C3F;
+      --brand-green-light: #ecfdf3;
+      --brand-amber: #B45309;
+      --brand-amber-light: #fefcf3;
+      --bg-color: #F0F2F5;
+      --surface-color: #ffffff;
+      --surface-soft: #f7f8fa;
+      --text-main: #1a1a2e;
+      --text-muted: #5c6370;
+      --border-soft: #d5dbe5;
+      --card-radius: 14px;
+      --shadow-sm: 0 2px 8px rgb(26 26 46 / 0.04);
+      --shadow-md: 0 4px 16px rgb(26 26 46 / 0.07);
+      --navbar-height: 56px;
+      --accent-navy: #0F1D3A;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body { 
+      margin: 0;
+      background: var(--bg-color); 
+      font-family: 'Sarabun', sans-serif; 
+      color: var(--text-main); 
+      overflow-x: hidden; 
+      -webkit-font-smoothing: antialiased; 
+      font-size: 0.95rem;
+    }
+    
+    .theme-text { color: var(--brand-red) !important; }
+    .blue-text { color: var(--primary-blue) !important; }
+
+    .top-navbar { 
+      background: var(--accent-navy);
+      border-bottom: none; 
+      position: sticky; 
+      top: 0; 
+      z-index: 1100; 
+      min-height: var(--navbar-height); 
+      box-shadow: 0 2px 12px rgba(15, 29, 58, 0.15);
+    }
+
+    .top-navbar .navbar-brand span { color: #fff !important; }
+    .top-navbar .navbar-brand .theme-text { color: #F0B040 !important; }
+    .top-navbar .navbar-brand i { color: #F0B040 !important; }
+
+    .sticky-dashboard-header { 
+      position: sticky; 
+      top: var(--navbar-height); 
+      z-index: 1050; 
+      background: rgba(255,255,255,.97);
+      backdrop-filter: blur(10px); 
+      padding: 12px 24px; 
+      border-bottom: 1px solid var(--border-soft); 
+      margin-bottom: 16px; 
+      box-shadow: var(--shadow-sm);
+      border-radius: 0;
+    }
+
+    .module-tabs { 
+      display:flex; 
+      gap:4px; 
+      background:#e4e8ef; 
+      border: 1px solid #d5dbe5;
+      padding:4px; 
+      border-radius:10px; 
+      width:fit-content; 
+      flex-wrap:wrap;
+    }
+
+    .module-tab { 
+      border:none; 
+      background:transparent; 
+      color:#5c6370; 
+      font-weight:700; 
+      font-size:0.82rem; 
+      padding:8px 16px; 
+      border-radius:8px; 
+      transition:all .2s; 
+    }
+
+    .module-tab:hover { color: var(--primary-blue); }
+
+    .module-tab.active { 
+      background:#fff; 
+      color:var(--primary-blue); 
+      box-shadow: 0 1px 4px rgba(15, 29, 58, 0.1);
+    }
+
+    .module-pane { display:none; animation:fadeIn .2s ease-in-out; }
+    .module-pane.active { display:block; }
+
+    @keyframes fadeIn { 
+      from { opacity:0; transform:translateY(3px);} 
+      to { opacity:1; transform:translateY(0);} 
+    }
+
+    .page-shell {
+      padding: 0 22px 28px;
+    }
+
+    .section-note {
+      font-size: .74rem;
+      color: #5c6370;
+      background: #f0f2f5;
+      border: 1px solid #d5dbe5;
+      border-radius: 6px;
+      padding: 4px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .filter-section { 
+      background: #fff;
+      padding: 20px; 
+      border-radius: 12px; 
+      margin-bottom: 20px; 
+      box-shadow: var(--shadow-sm); 
+      border: 1px solid var(--border-soft); 
+    }
+
+    .filter-label { 
+      font-size: 0.7rem; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      color: var(--text-muted); 
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .form-select,
+    .form-control {
+      border-radius: 8px;
+      border-color: #d5dbe5;
+      min-height: 40px;
+      font-size: .9rem;
+      box-shadow: none !important;
+    }
+
+    .form-select:focus,
+    .form-control:focus {
+      border-color: #8da0c4;
+      box-shadow: 0 0 0 0.2rem rgba(27,42,74,.10) !important;
+    }
+
+    .multi-select-wrap { position: relative; }
+
+    .multi-select-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .link-mini-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--primary-blue);
+      cursor: pointer;
+    }
+
+    .level-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      background: #f7f8fa;
+      border: 1px solid #e4e8ef;
+      border-radius: 10px;
+      padding: 12px 14px;
+      min-height: 68px;
+    }
+
+    .custom-chk .form-check-input { 
+      cursor: pointer; 
+      border-color: #bcc3cf; 
+      width: 1.1em; 
+      height: 1.1em; 
+      margin-top: 0.1em; 
+    }
+
+    .custom-chk .form-check-input:checked { 
+      background-color: var(--primary-blue); 
+      border-color: var(--primary-blue); 
+    }
+
+    .custom-chk .form-check-label { 
+      cursor: pointer; 
+      font-size: 0.8rem; 
+      color: var(--text-main); 
+      font-weight: 500;
+    }
+
+    .chip { 
+      padding: 5px 11px; 
+      border-radius: 6px; 
+      font-size: 0.76rem; 
+      cursor: pointer; 
+      border: 1px solid #d5dbe5; 
+      background: var(--surface-color); 
+      color: var(--text-muted); 
+      transition: all 0.2s ease;
+    }
+
+    .chip:hover { background: #f0f2f5; }
+    .chip.active { 
+      background: var(--primary-blue-light); 
+      color: var(--primary-blue); 
+      border-color: var(--primary-blue); 
+      font-weight: 700; 
+    }
+
+    .kpi-box { 
+      padding: 20px; 
+      border-radius: 12px; 
+      background: #fff;
+      box-shadow: var(--shadow-sm); 
+      position: relative; 
+      overflow: hidden; 
+      border: 1px solid var(--border-soft); 
+      transition: all 0.2s ease; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      height: 100%;
+    }
+
+    .kpi-box:hover { 
+      box-shadow: var(--shadow-md); 
+      border-color: #bcc3cf; 
+    }
+
+    .kpi-title { 
+      font-size: 0.72rem; 
+      font-weight: 800; 
+      color: var(--text-muted); 
+      text-transform: uppercase; 
+      margin-bottom: 6px; 
+      letter-spacing: 0.06em;
+    }
+
+    .kpi-number { 
+      font-size: 2rem; 
+      font-weight: 800; 
+      line-height: 1; 
+      margin-bottom: 4px; 
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+    }
+
+    .icon-wrapper { 
+      position: absolute; 
+      right: 14px; 
+      top: 14px; 
+      width: 38px; 
+      height: 38px; 
+      border-radius: 10px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 1.1rem; 
+    }
+
+    .bg-blue-soft { background-color: var(--primary-blue-light); color: var(--primary-blue); }
+    .bg-red-soft { background-color: var(--brand-red-light); color: var(--brand-red); }
+    .bg-green-soft { background-color: var(--brand-green-light); color: var(--brand-green); }
+    .bg-orange-soft { background-color: var(--brand-amber-light); color: var(--brand-amber); }
+
+    .card-custom { 
+      background: #fff; 
+      border-radius: 12px; 
+      border: 1px solid var(--border-soft); 
+      box-shadow: var(--shadow-sm); 
+      height: 100%; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden; 
+    }
+
+    .card-head { 
+      padding: 14px 20px; 
+      border-bottom: 1px solid #e4e8ef; 
+      font-weight: 800; 
+      color: var(--text-main); 
+      font-size: 0.95rem; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: #fff;
+    }
+
+    .card-body-custom { 
+      padding: 16px 20px; 
+      flex-grow: 1; 
+    }
+
+    .table-responsive { padding-bottom: 5px; }
+
+    .table-custom th { 
+      font-size: 0.72rem; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      color: #3d4554; 
+      background-color: #f4f6f9; 
+      border-bottom: 2px solid #d5dbe5; 
+      padding: 10px; 
+      cursor: pointer; 
+      transition: background 0.2s;
+      letter-spacing: 0.06em;
+    }
+
+    .table-custom th:hover { background-color: #eaecf2; }
+
+    .table-custom td { 
+      vertical-align: middle; 
+      font-size: 0.85rem; 
+      padding: 10px 8px; 
+      border-bottom: 1px solid #eef0f4;
+    }
+
+    .table-custom tbody tr:hover { background-color: #f7f8fa !important; }
+    .clickable-row { cursor: pointer; }
+
+    .table-group-head th { 
+      background: #e8ecf3 !important; 
+      text-align: center; 
+      font-size: 0.72rem;
+      color: var(--primary-blue) !important;
+      font-weight: 800 !important;
+      border-bottom: 1px solid #c5cdd9 !important;
+    }
+
+    #tableStorePerformance {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      background: #fff;
+    }
+
+    #tableStorePerformance thead th { z-index: 2 !important; }
+
+    #tableStorePerformance tbody td:nth-child(1),
+    #tableStorePerformance thead th:nth-child(1) {
+      position: sticky; left: 0; background: inherit; z-index: 1;
+    }
+
+    #tableStorePerformance tbody td:nth-child(2),
+    #tableStorePerformance thead th:nth-child(2) {
+      position: sticky; left: 86px; background: inherit; z-index: 1;
+    }
+
+    #tableStorePerformance thead th:nth-child(1),
+    #tableStorePerformance thead th:nth-child(2) {
+      z-index: 3; background: #f4f6f9 !important;
+    }
+
+    #tableStorePerformance tbody td:nth-child(1),
+    #tableStorePerformance tbody td:nth-child(2) {
+      background: #fff !important;
+    }
+
+    .perf-group-end { border-right: 2px solid #94a3b8 !important; }
+    .perf-group-start { border-left: 2px solid #94a3b8 !important; }
+
+    #tableStorePerformance thead tr:nth-child(2) th:nth-child(5),
+    #tableStorePerformance thead tr:nth-child(2) th:nth-child(10),
+    #tableStorePerformance thead tr:nth-child(2) th:nth-child(15),
+    #tableStorePerformance tbody td:nth-child(10),
+    #tableStorePerformance tbody td:nth-child(15),
+    #tableStorePerformance tbody td:nth-child(20) {
+      border-right: 2px solid #94a3b8 !important;
+    }
+
+    #tableStorePerformance thead tr:nth-child(2) th:nth-child(1),
+    #tableStorePerformance thead tr:nth-child(2) th:nth-child(6),
+    #tableStorePerformance thead tr:nth-child(2) th:nth-child(11),
+    #tableStorePerformance tbody td:nth-child(6),
+    #tableStorePerformance tbody td:nth-child(11),
+    #tableStorePerformance tbody td:nth-child(16) {
+      border-left: 2px solid #94a3b8 !important;
+    }
+
+    .rank-badge {
+      min-width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: .78rem;
+    }
+
+    .rank-1 { background: #FEF3C7; color: #92400E; }
+    .rank-2 { background: #E2E8F0; color: #334155; }
+    .rank-3 { background: #FFEDD5; color: #9A3412; }
+    .rank-other { background: #F1F5F9; color: #475569; }
+
+    .sync-indicator { 
+      display: none; 
+      font-size: 0.75rem; 
+      font-weight: 700; 
+      color: var(--primary-blue); 
+      background: var(--primary-blue-light); 
+      padding: 4px 10px; 
+      border-radius: 6px; 
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.96);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(6px);
+      gap: 12px;
+    }
+
+    .tooltip-inner { 
+      text-align: left; padding: 10px; 
+      font-family: 'Sarabun', sans-serif; font-size: 0.8rem; 
+    }
+
+    .kpi-accent-bar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 12px 0 0 12px;
+    }
+
+    .tenure-clickable { cursor: pointer; }
+    .tenure-clickable:hover { background: #f4f6f9; border-radius: 6px; }
+
+    /* Modal stacking fix */
+    .modal { z-index: 1050; }
+    .modal-backdrop { z-index: 1040; }
+    body.modal-stack .modal-backdrop + .modal-backdrop { z-index: 1060; }
+    body.modal-stack .modal + .modal { z-index: 1070; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f4f6f9; }
+    ::-webkit-scrollbar-thumb { background: #c5cdd9; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    @media (max-width: 992px) {
+      .sticky-dashboard-header, .top-navbar { position: relative !important; z-index: 1; }
+      .page-shell { padding: 0 16px 24px; }
+    }
+
+    @media (max-width: 768px) {
+      .kpi-number { font-size: 1.7rem !important; }
+      #tableStorePerformance tbody td:nth-child(1),
+      #tableStorePerformance tbody td:nth-child(2),
+      #tableStorePerformance thead th:nth-child(1),
+      #tableStorePerformance thead th:nth-child(2) {
+        position: static; left: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner-border text-primary" style="width:2.8rem; height:2.8rem;"></div>
+    <div class="fw-bold text-dark" id="loadingText">Loading turnover dashboard...</div>
+    <div class="text-muted small">Preparing filters and aggregations</div>
+  </div>
+
+  <nav class="navbar top-navbar py-2">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand fw-bold d-flex align-items-center fs-5 m-0" href="<?= getWebAppUrl() ?>">
+        <i class="bi bi-hexagon-half blue-text me-2"></i>
+        <span style="color:#0f172a;">Makro <span class="theme-text">Turnover Control Tower</span></span>
+      </a>
+      <div class="ms-auto d-flex gap-2 align-items-center">
+        <a href="<?= getWebAppUrl() ?>" class="btn btn-sm btn-outline-light fw-bold rounded-pill px-4" style="border-color:rgba(255,255,255,.3);">
+          <i class="bi bi-speedometer2 me-1"></i> Main Dashboard
+        </a>
+        <button type="button" class="btn btn-sm fw-bold rounded-pill px-4" style="background:#F0B040; color:#1B2A4A;" onclick="window.print()">
+          <i class="bi bi-file-earmark-slides me-1"></i> Save PDF / Slide
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sticky-dashboard-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="module-tabs">
+      <button class="module-tab active" data-module="executive">1. Executive View</button>
+      <button class="module-tab" data-module="storeperf">2. Store Performance Table</button>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 ms-auto">
+      <div id="sync-indicator" class="sync-indicator">
+        <i class="bi bi-arrow-repeat"></i> Refreshing...
+      </div>
+
+      <div class="section-note">
+        <i class="bi bi-clock-history"></i>
+        <span id="snapshotTime">Data prepared</span>
+      </div>
+
+      <button class="btn btn-sm btn-outline-primary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+        <i class="bi bi-funnel me-1"></i> Filters
+      </button>
+    </div>
+  </div>
+
+  <main class="page-shell">
+    <div class="collapse show" id="filterCollapse">
+      <section class="filter-section">
+        <div class="row g-3 align-items-end">
+          <!-- Row 1: Date / Scope / Conversion Toggle / Actions -->
+          <div class="col-md-2">
+            <label class="filter-label">Start Date</label>
+            <div class="d-flex align-items-center gap-1">
+              <input type="date" id="dateStart" class="form-control form-control-sm">
+              <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.7rem;" type="button" onclick="setQuickDate('mtd')">MTD</button>
+              <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.7rem;" type="button" onclick="setQuickDate('ytd')">YTD</button>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <label class="filter-label">End Date</label>
+            <input type="date" id="dateEnd" class="form-control form-control-sm" onchange="triggerFilters()">
+          </div>
+          <div class="col-md-2">
+            <label class="filter-label">Store Scope</label>
+            <select id="selStoreScope" class="form-select form-select-sm" onchange="handleScopeChange(false)">
+              <option value="all" selected>All Stores</option>
+              <option value="53">53 Stores Focus</option>
+              <option value="30">30 Stores Focus</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="filter-label">Data View</label>
+            <div class="d-flex align-items-center gap-2">
+              <div class="form-check form-switch m-0">
+                <input class="form-check-input" type="checkbox" id="toggleExcludeConvert" onchange="triggerFilters()" style="cursor:pointer;">
+                <label class="form-check-label" for="toggleExcludeConvert" style="font-size:.8rem; cursor:pointer;">
+                  Exclude Conversion <span class="text-muted" style="font-size:.7rem;">(Temp→Perm)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-primary w-100 rounded-pill" type="button" onclick="triggerFilters()">
+                <i class="bi bi-arrow-repeat me-1"></i> Apply
+              </button>
+              <button class="btn btn-sm btn-light border rounded-pill px-3" type="button" onclick="resetFilters()">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Job Level (compact) -->
+          <div class="col-12">
+            <label class="filter-label">Job Level</label>
+            <div class="level-filter-bar">
+              <div class="form-check form-check-inline custom-chk m-0 border-end pe-3 me-1">
+                <input class="form-check-input" type="checkbox" id="lvlAll" onchange="toggleAllLevels(this, 'Level')">
+                <label class="form-check-label fw-bold" for="lvlAll">All</label>
+              </div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="Temporary" id="lvl1" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl1">Temp</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="Student" id="lvl2" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl2">Student</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="Staff" id="lvl3" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl3">Staff</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="Officer" id="lvl4" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl4">Officer</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="Supv." id="lvl5" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl5">Supv.</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="SM" id="lvl6" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl6">SM</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="Manager" id="lvl7" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl7">Manager</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="ASGM" id="lvl8" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl8">ASGM</label></div>
+              <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="SGM" id="lvl9" onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl9">SGM</label></div>
+            </div>
+          </div>
+
+          <!-- Row 3: Compact multi-selects in single row -->
+          <div class="col-md-2">
+            <label class="filter-label">Format <span id="badgeFmt" class="badge bg-primary rounded-pill ms-1" style="font-size:.65rem;"></span></label>
+            <select id="formatSelect" class="form-select form-select-sm" size="4" multiple onchange="updateFilterBadge('formatSelect','badgeFmt'); triggerFilters()"></select>
+          </div>
+          <div class="col-md-2">
+            <label class="filter-label">Regional CEO <span id="badgeCEO" class="badge bg-primary rounded-pill ms-1" style="font-size:.65rem;"></span></label>
+            <select id="ceoSelect" class="form-select form-select-sm" size="4" multiple onchange="updateFilterBadge('ceoSelect','badgeCEO'); triggerFilters()"></select>
+          </div>
+          <div class="col-md-2">
+            <label class="filter-label">OD <span id="badgeOd" class="badge bg-primary rounded-pill ms-1" style="font-size:.65rem;"></span></label>
+            <select id="odSelect" class="form-select form-select-sm" size="4" multiple onchange="updateFilterBadge('odSelect','badgeOd'); triggerFilters()"></select>
+          </div>
+          <div class="col-md-2">
+            <label class="filter-label">Subregion <span id="badgeArea" class="badge bg-primary rounded-pill ms-1" style="font-size:.65rem;"></span></label>
+            <select id="areaSelect" class="form-select form-select-sm" size="4" multiple onchange="updateFilterBadge('areaSelect','badgeArea'); triggerFilters()"></select>
+          </div>
+          <div class="col-md-2">
+            <label class="filter-label">Store <span id="badgeStore" class="badge bg-primary rounded-pill ms-1" style="font-size:.65rem;"></span></label>
+            <select id="storeSelect" class="form-select form-select-sm" size="4" multiple onchange="updateFilterBadge('storeSelect','badgeStore'); triggerFilters()"></select>
+          </div>
+          <div class="col-md-2">
+            <label class="filter-label">Department <span id="badgeDept" class="badge bg-primary rounded-pill ms-1" style="font-size:.65rem;"></span></label>
+            <select id="deptSelect" class="form-select form-select-sm" size="4" multiple onchange="updateFilterBadge('deptSelect','badgeDept'); triggerFilters()"></select>
+          </div>
+
+          <!-- Row 4: Quick actions for all selects -->
+          <div class="col-12">
+            <div class="d-flex gap-3 flex-wrap" style="font-size:.78rem;">
+              <span class="text-muted fw-bold">Quick:</span>
+              <a href="#" class="link-mini-btn" onclick="selectAllFilters(); return false;">Select All Filters</a>
+              <a href="#" class="link-mini-btn" onclick="clearAllFilters(); return false;">Clear All Filters</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="module-pane active" id="module-executive">
+
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-6 g-3 mb-4 align-items-stretch">
+        <div class="col">
+          <article class="kpi-box">
+            <div class="kpi-accent-bar" style="background:#1B2A4A;"></div>
+            <div class="kpi-title" style="padding-left:8px;">Headcount (Active)</div>
+            <div class="kpi-number" style="padding-left:8px;" id="kpiActive">0</div>
+            <small class="text-muted" style="font-size:0.73rem; padding-left:8px;">Current active staff</small>
+            <div class="icon-wrapper bg-blue-soft"><i class="bi bi-people-fill"></i></div>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="kpi-box">
+            <div class="kpi-accent-bar" style="background:#1B2A4A;"></div>
+            <div class="kpi-title" style="padding-left:8px;">Hires</div>
+            <div class="kpi-number" style="padding-left:8px;" id="kpiHires">0</div>
+            <small class="text-muted" style="font-size:0.73rem; padding-left:8px;">In selected period</small>
+            <div class="icon-wrapper bg-blue-soft"><i class="bi bi-person-plus-fill"></i></div>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="kpi-box">
+            <div class="kpi-accent-bar" style="background:#C41E3A;"></div>
+            <div class="kpi-title" style="padding-left:8px;">Total Resign</div>
+            <div class="kpi-number" style="color:#C41E3A; padding-left:8px;" id="kpiResigned">0</div>
+            <small class="text-muted" style="font-size:0.73rem; padding-left:8px;">Staff exited in period</small>
+            <div class="icon-wrapper bg-red-soft"><i class="bi bi-person-x-fill"></i></div>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="kpi-box">
+            <div class="kpi-accent-bar" style="background:#C41E3A;"></div>
+            <div class="kpi-title" id="kpiRateTitle" style="padding-left:8px;">Turnover Rate</div>
+            <div class="kpi-number" style="color:#C41E3A; padding-left:8px;" id="kpiRate">0.0%</div>
+            <small class="text-muted" id="kpiAvgActive" style="font-size:0.73rem; padding-left:8px;">Formula: Resign / (Avg HC + Resign)</small>
+            <div class="icon-wrapper bg-red-soft"><i class="bi bi-graph-down-arrow"></i></div>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="kpi-box">
+            <div class="kpi-accent-bar" style="background:#B45309;"></div>
+            <div class="kpi-title" style="padding-left:8px;">Tenure Exit (within 90D)</div>
+            <div class="kpi-number" style="color:#B45309; padding-left:8px;" id="kpiEarly">0</div>
+            <small class="text-muted" id="kpiEarlySub" style="font-size:0.73rem; padding-left:8px;">Critical drop-off</small>
+            <div class="icon-wrapper bg-orange-soft"><i class="bi bi-hourglass-bottom"></i></div>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="kpi-box" id="boxNetGrowth">
+            <div class="kpi-accent-bar" id="kpiGrowthBar" style="background:#0D7C3F;"></div>
+            <div class="kpi-title" style="padding-left:8px;">Net Growth</div>
+            <div class="kpi-number" style="color:#0D7C3F; padding-left:8px;" id="kpiGrowth">0</div>
+            <small class="text-muted" id="kpiGrowthSub" style="font-size:0.73rem; padding-left:8px;">Hires 0 / Resigns 0</small>
+            <div class="icon-wrapper bg-green-soft"><i class="bi bi-arrow-left-right"></i></div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Row 1: Tenure Exit + Why People Leave + Exit Category -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-3">
+          <div class="card-custom h-100">
+            <div class="card-head">
+              <span><i class="bi bi-pie-chart-fill me-2" style="color:#B45309;"></i>Tenure Exit Distribution</span>
+              <span class="section-note" style="font-size:.65rem;"><i class="bi bi-cursor-fill"></i> Click slice</span>
+            </div>
+            <div class="card-body-custom">
+              <div style="height: 220px;"><canvas id="chartTenureExit"></canvas></div>
+              <div id="tenureExitLegend" class="mt-2" style="font-size: 0.72rem; color: #475569;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-custom h-100">
+            <div class="card-head">
+              <span><i class="bi bi-clipboard-data me-2" style="color:#C41E3A;"></i>Why People Leave — Top Resign Reasons</span>
+            </div>
+            <div class="card-body-custom">
+              <div style="height: 320px;"><canvas id="chartExecReasons"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="card-custom h-100">
+            <div class="card-head">
+              <span><i class="bi bi-pie-chart-fill me-2" style="color:#2563EB;"></i>Exit Category</span>
+            </div>
+            <div class="card-body-custom">
+              <div style="height: 200px;"><canvas id="chartExecCategory"></canvas></div>
+              <div id="execCategoryLegend" class="mt-2" style="font-size:.75rem;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Onboarding + Trend -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <div class="card-custom h-100">
+            <div class="card-head">
+              <span><i class="bi bi-rocket-takeoff-fill me-2 theme-text"></i>Onboarding Success Analysis</span>
+              <span class="section-note"><i class="bi bi-bar-chart-steps"></i> Cohort: Hires → exits by tenure</span>
+            </div>
+            <div class="card-body-custom">
+              <div style="height: 300px;"><canvas id="chartOnboarding"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-custom h-100">
+            <div class="card-head">
+              <span><i class="bi bi-graph-up-arrow me-2 theme-text"></i>Trend: Hires vs Exits</span>
+              <span class="section-note"><i class="bi bi-calendar3"></i> Selected period</span>
+            </div>
+            <div class="card-body-custom">
+              <div style="height: 300px;"><canvas id="chartTrend"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Top 10 tables -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-head">
+              <span><i class="bi bi-shop me-2 theme-text"></i>Top 10 Store Highest Turnover (Ranking)</span>
+              <span class="section-note"><i class="bi bi-graph-down"></i> Click header to sort</span>
+            </div>
+            <div class="p-0">
+              <div class="table-responsive">
+                <table class="table table-custom table-hover text-center mb-0" id="tableTopBranches">
+                  <thead class="sticky-top">
+                    <tr>
+                      <th style="width:60px;">#</th>
+                      <th class="text-start" data-sort-top="store-name" style="cursor:pointer;">Store</th>
+                      <th data-sort-top="store-hires" style="cursor:pointer;">Hires</th>
+                      <th data-sort-top="store-exits" style="cursor:pointer;">Exits</th>
+                      <th data-sort-top="store-rate" style="cursor:pointer;">Turnover %</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card-custom">
+            <div class="card-head">
+              <span><i class="bi bi-diagram-3 me-2 text-warning"></i>Top 10 Department Highest Turnover (Ranking)</span>
+              <span class="section-note"><i class="bi bi-hand-index-thumb"></i> Click to see stores</span>
+            </div>
+            <div class="p-0">
+              <div class="table-responsive">
+                <table class="table table-custom table-hover text-center mb-0" id="tableTopPos">
+                  <thead class="sticky-top">
+                    <tr>
+                      <th style="width:60px;">#</th>
+                      <th class="text-start" data-sort-top="dept-name" style="cursor:pointer;">Department</th>
+                      <th data-sort-top="dept-hires" style="cursor:pointer;">Hires</th>
+                      <th data-sort-top="dept-exits" style="cursor:pointer;">Exits</th>
+                      <th data-sort-top="dept-rate" style="cursor:pointer;">Turnover %</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="module-pane" id="module-storeperf">
+      <div class="card-custom border-top border-primary border-4">
+        <div class="card-head">
+          <span><i class="bi bi-table me-2 blue-text"></i>Store Performance Table</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="section-note"><i class="bi bi-layout-text-window"></i> Executive detail grid</span>
+            <small class="text-muted fw-normal">Uses the same filters as Executive Summary • Focus on Target / Active / Fill / Hires / Exits / Turnover</small>
+            <button type="button" class="btn btn-sm btn-success fw-medium px-3 rounded-pill" onclick="exportStorePerformanceExcel()">
+              <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body-custom p-0">
+          <div class="table-responsive" style="max-height: 680px; overflow:auto;">
+            <table class="table table-hover table-custom text-center mb-0" id="tableStorePerformance">
+              <thead class="sticky-top">
+                <tr class="table-group-head">
+                  <th rowspan="3" data-sort="no">Store No</th>
+                  <th rowspan="3" class="text-start" data-sort="name">Store Name</th>
+                  <th rowspan="3" data-sort="target">Target</th>
+                  <th rowspan="3" data-sort="currentActive">Current Active</th>
+                  <th rowspan="3" data-sort="fillRate">Fill %</th>
+                  <th colspan="15">Performance Detail</th>
+                </tr>
+                <tr class="table-group-head">
+                  <th colspan="5" class="perf-group-end">Hires</th>
+                  <th colspan="5" class="perf-group-end">Exits</th>
+                  <th colspan="5">Turnover %</th>
+                </tr>
+                <tr>
+                  <th data-sort="hireSupport">Support</th>
+                  <th data-sort="hireFloor">Floor</th>
+                  <th data-sort="hireO2O">O2O</th>
+                  <th data-sort="hireB2B">B2B</th>
+                  <th data-sort="hires" class="perf-group-end">Total</th>
+
+                  <th data-sort="exitSupport" class="perf-group-start">Support</th>
+                  <th data-sort="exitFloor">Floor</th>
+                  <th data-sort="exitO2O">O2O</th>
+                  <th data-sort="exitB2B">B2B</th>
+                  <th data-sort="exits" class="perf-group-end">Total</th>
+
+                  <th data-sort="toSupport" class="perf-group-start">Support</th>
+                  <th data-sort="toFloor">Floor</th>
+                  <th data-sort="toO2O">O2O</th>
+                  <th data-sort="toB2B">B2B</th>
+                  <th data-sort="rate">Total</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyStorePerformance"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Store modal -->
+  <div class="modal fade" id="storeModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content shadow-lg border-0 rounded-4">
+        <div class="modal-header bg-dark text-white py-3 d-flex align-items-center">
+          <h5 class="modal-title fw-bold mb-0 text-white" id="modalStoreTitle">
+            <i class="bi bi-shop me-2 text-warning"></i>Store Detail
+          </h5>
+          <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body bg-light">
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <div class="kpi-box p-3 h-100">
+                <div class="kpi-title">Hires</div>
+                <div class="kpi-number" id="mAvg" style="font-size:1.65rem;">0</div>
+                <small class="text-muted">In period</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="kpi-box p-3 h-100">
+                <div class="kpi-title">Exits</div>
+                <div class="kpi-number text-danger" id="mExits" style="font-size:1.65rem;">0</div>
+                <small class="text-muted">In period</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="kpi-box p-3 h-100">
+                <div class="kpi-title">Turnover %</div>
+                <div class="kpi-number theme-text" id="mRate" style="font-size:1.65rem;">0.0%</div>
+                <small class="text-muted">Store formula</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="kpi-box p-3 h-100">
+                <div class="kpi-title">Company Benchmark</div>
+                <div class="kpi-number blue-text" id="mBench" style="font-size:1.65rem;">0.0%</div>
+                <small class="text-muted">Current executive rate</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4">
+            <div class="col-lg-7">
+              <div class="card-custom h-100">
+                <div class="card-head">
+                  <span><i class="bi bi-bar-chart-line me-2 theme-text"></i>Store Trend</span>
+                </div>
+                <div class="card-body-custom">
+                  <div style="height: 280px;"><canvas id="modalChartTrend"></canvas></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-5">
+              <div class="card-custom h-100">
+                <div class="card-head">
+                  <span><i class="bi bi-pie-chart-fill me-2 text-warning"></i>Tenure Exit Mix</span>
+                  <span class="section-note" style="font-size:.68rem;"><i class="bi bi-cursor-fill"></i> Click slice</span>
+                </div>
+                <div class="card-body-custom">
+                  <div style="height: 280px;"><canvas id="modalChartEarly"></canvas></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resign Reason by Tenure Bucket (shown when clicking donut) -->
+          <div id="storeReasonPanel" class="card-custom mt-3" style="display:none;">
+            <div class="card-head">
+              <span><i class="bi bi-clipboard-data me-2" style="color:#C41E3A;"></i><span id="storeReasonTitle">Resign Reasons</span></span>
+            </div>
+            <div class="card-body-custom p-0">
+              <div class="table-responsive" style="max-height:250px;">
+                <table class="table table-sm table-hover text-center mb-0">
+                  <thead class="sticky-top" style="background:#f4f6f9;">
+                    <tr><th style="width:40px;">#</th><th class="text-start">Resign Reason</th><th>Count</th><th>%</th></tr>
+                  </thead>
+                  <tbody id="storeReasonBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-custom mt-4">
+            <div class="card-head">
+              <span><i class="bi bi-diagram-3 me-2 blue-text"></i>Department Breakdown</span>
+              <button type="button" class="btn btn-sm btn-success rounded-pill" onclick="exportModalExcel()">
+                <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+              </button>
+            </div>
+            <div class="p-0">
+              <div class="table-responsive" style="max-height: 360px;">
+                <table class="table table-custom table-hover text-center mb-0" id="modalTableDepts">
+                  <thead class="sticky-top">
+                    <tr>
+                      <th class="text-start ps-3">Department</th>
+                      <th>Hires</th>
+                      <th>Exits</th>
+                      <th>Turnover %</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Problematic position modal -->
+  <div class="modal fade" id="problemPosModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header py-3" style="background:#1B2A4A;">
+          <h5 class="modal-title fw-bold text-white" id="problemPosModalTitle">
+            <i class="bi bi-diagram-3 me-2" style="color:#F0B040;"></i>Department Turnover Detail
+          </h5>
+          <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <!-- KPI Row -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Total Exits</div><div class="kpi-number" id="deptModalExits" style="font-size:1.5rem; color:#C41E3A;">0</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Hires</div><div class="kpi-number" id="deptModalHires" style="font-size:1.5rem; color:#1B2A4A;">0</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Turnover Rate</div><div class="kpi-number" id="deptModalRate" style="font-size:1.5rem; color:#C41E3A;">0%</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Company Benchmark</div><div class="kpi-number" id="deptModalBench" style="font-size:1.5rem; color:#1B2A4A;">0%</div></div></div>
+          </div>
+          <!-- Charts Row -->
+          <div class="row g-3 mb-3">
+            <div class="col-lg-7">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-graph-up-arrow me-2" style="color:#1B2A4A;"></i>Monthly Trend</span></div>
+              <div class="card-body-custom"><div style="height:250px;"><canvas id="deptModalTrend"></canvas></div></div></div>
+            </div>
+            <div class="col-lg-5">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-pie-chart-fill me-2" style="color:#C41E3A;"></i>Tenure Exit Distribution</span>
+              <span class="section-note" style="font-size:.68rem;"><i class="bi bi-cursor-fill"></i> Click slice</span></div>
+              <div class="card-body-custom"><div style="height:250px;"><canvas id="deptModalTenure"></canvas></div></div></div>
+            </div>
+          </div>
+          <!-- Tenure Reason Panel (shown on donut click) -->
+          <div id="deptTenureReasonPanel" class="card-custom mb-3" style="display:none;">
+            <div class="card-head"><span><i class="bi bi-clipboard-data me-2" style="color:#C41E3A;"></i><span id="deptTenureReasonTitle">Resign Reasons</span></span></div>
+            <div class="p-0"><div class="table-responsive" style="max-height:220px;">
+              <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th class="text-start">Resign Reason</th><th>Count</th><th>%</th></tr></thead>
+              <tbody id="deptTenureReasonBody"></tbody></table>
+            </div></div>
+          </div>
+          <!-- Resign Reason + Store Breakdown -->
+          <div class="row g-3 mb-3">
+            <div class="col-lg-5">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-clipboard-data me-2" style="color:#D97706;"></i>Top Resign Reasons</span></div>
+              <div class="p-0"><div class="table-responsive" style="max-height:280px;">
+                <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th class="text-start">Reason</th><th>Count</th><th>%</th></tr></thead>
+                <tbody id="deptModalReasons"></tbody></table>
+              </div></div></div>
+            </div>
+            <div class="col-lg-7">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-shop me-2" style="color:#1B2A4A;"></i>Store Breakdown</span></div>
+              <div class="p-0"><div class="table-responsive" style="max-height:280px;">
+                <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th>Store</th><th class="text-start">Name</th><th>Hires</th><th>Exits</th><th>TO %</th></tr></thead>
+                <tbody id="problemPosModalBody"></tbody></table>
+              </div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Turnover Drill-down modal -->
+
+  <!-- Resign Reason / Category Drill-down modal -->
+  <div class="modal fade" id="reasonDrillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header py-3" style="background:#1B2A4A;">
+          <h5 class="modal-title fw-bold text-white" id="reasonDrillTitle">
+            <i class="bi bi-clipboard-data me-2" style="color:#F0B040;"></i>Reason Detail
+          </h5>
+          <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Exits</div><div class="kpi-number" id="rdExits" style="font-size:1.4rem; color:#C41E3A;">0</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">% of Total</div><div class="kpi-number" id="rdPct" style="font-size:1.4rem; color:#1B2A4A;">0%</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Stores Affected</div><div class="kpi-number" id="rdStores" style="font-size:1.4rem; color:#D97706;">0</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Depts Affected</div><div class="kpi-number" id="rdDepts" style="font-size:1.4rem; color:#2563EB;">0</div></div></div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-12">
+              <div class="card-custom"><div class="card-head"><span><i class="bi bi-graph-up-arrow me-2" style="color:#1B2A4A;"></i>Monthly Trend</span></div>
+              <div class="card-body-custom"><div style="height:220px;"><canvas id="rdChartTrend"></canvas></div></div></div>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-shop me-2" style="color:#1B2A4A;"></i>Top Stores</span></div>
+              <div class="p-0"><div class="table-responsive" style="max-height:280px;">
+                <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th>Store</th><th class="text-start">Name</th><th>Count</th><th>%</th></tr></thead>
+                <tbody id="rdStoreBody"></tbody></table>
+              </div></div></div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-diagram-3 me-2" style="color:#D97706;"></i>Top Departments</span></div>
+              <div class="p-0"><div class="table-responsive" style="max-height:280px;">
+                <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th class="text-start">Department</th><th>Count</th><th>%</th></tr></thead>
+                <tbody id="rdDeptBody"></tbody></table>
+              </div></div></div>
+            </div>
+          </div>
+          <!-- Extra: reasons within category (for Exit Category drill) -->
+          <div id="rdReasonsPanel" class="card-custom mt-3" style="display:none;">
+            <div class="card-head"><span><i class="bi bi-list-ul me-2" style="color:#C41E3A;"></i>Reasons in this Category</span></div>
+            <div class="p-0"><div class="table-responsive" style="max-height:250px;">
+              <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th class="text-start">Resign Reason</th><th>Count</th><th>%</th></tr></thead>
+              <tbody id="rdReasonsList"></tbody></table>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Turnover Drill-down modal -->
+  <div class="modal fade" id="storeToDrillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header py-3" style="background:#1B2A4A;">
+          <h5 class="modal-title fw-bold text-white" id="storeToDrillTitle">
+            <i class="bi bi-graph-down-arrow me-2" style="color:#F0B040;"></i>Turnover Drill-down
+          </h5>
+          <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Hires</div><div class="kpi-number" id="toDrillHires" style="font-size:1.4rem; color:#0D7C3F;">0</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Exits</div><div class="kpi-number" id="toDrillExits" style="font-size:1.4rem; color:#C41E3A;">0</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Turnover %</div><div class="kpi-number" id="toDrillRate" style="font-size:1.4rem; color:#C41E3A;">0%</div></div></div>
+            <div class="col-md-3"><div class="kpi-box p-3 h-100"><div class="kpi-title">Avg HC</div><div class="kpi-number" id="toDrillAvg" style="font-size:1.4rem; color:#1B2A4A;">0</div></div></div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-clipboard-data me-2" style="color:#C41E3A;"></i>Top Resign Reasons</span></div>
+              <div class="p-0"><div class="table-responsive" style="max-height:280px;">
+                <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th class="text-start">Reason</th><th>Count</th><th>%</th></tr></thead>
+                <tbody id="toDrillReasons"></tbody></table>
+              </div></div></div>
+            </div>
+            <div class="col-md-6">
+              <div class="card-custom h-100"><div class="card-head"><span><i class="bi bi-diagram-3 me-2" style="color:#1B2A4A;"></i>Department Breakdown</span></div>
+              <div class="p-0"><div class="table-responsive" style="max-height:280px;">
+                <table class="table table-sm table-hover text-center mb-0"><thead class="sticky-top" style="background:#f4f6f9;"><tr><th style="width:35px;">#</th><th class="text-start">Department</th><th>Hires</th><th>Exits</th><th>TO %</th></tr></thead>
+                <tbody id="toDrillDepts"></tbody></table>
+              </div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tenure Exit drill-down modal -->
+  <div class="modal fade" id="tenureDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header py-3" style="background:#1B2A4A;">
+          <h5 class="modal-title fw-bold text-white" id="tenureDetailModalTitle">
+            <i class="bi bi-clock-history me-2" style="color:#F0B040;"></i>Tenure Exit Detail
+          </h5>
+          <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <div class="kpi-box p-3 h-100">
+                <div class="kpi-title">Exits in Bucket</div>
+                <div class="kpi-number" id="tenureDetailCount" style="font-size:1.6rem; color:#C41E3A;">0</div>
+                <small class="text-muted" id="tenureDetailPct">0% of total exits</small>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="kpi-box p-3 h-100">
+                <div class="kpi-title">Focus Subregion</div>
+                <div id="tenureDetailInsight" style="font-size:0.9rem; font-weight:600; color:#1B2A4A; margin-top:4px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-custom">
+            <div class="card-head">
+              <span><i class="bi bi-shop me-2" style="color:#1B2A4A;"></i>Store Breakdown</span>
+            </div>
+            <div class="p-0">
+              <div class="table-responsive" style="max-height:50vh;">
+                <table class="table table-hover table-sm text-center mb-0">
+                  <thead class="sticky-top" style="background:#f4f6f9;">
+                    <tr>
+                      <th style="width:50px;">#</th>
+                      <th>Store No.</th>
+                      <th class="text-start">Store Name</th>
+                      <th>Exits in Bucket</th>
+                      <th>Total Exits</th>
+                      <th>% of Store Exits</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tenureDetailModalBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+    Chart.defaults.font.family = "'Sarabun', sans-serif";
+    Chart.defaults.color = "#64748b";
+
+    const appState = {
+      isLoading: true,
+      rawData: { targets: [], staff: [], applicants: [], parttime: [] },
+      storeMetaMap: {},
+      baseTargetKeys: new Set(),
+      charts: {},
+      data: { metrics: {}, stores: [], depts: [], timeline: {}, rawStores: {} },
+      currentStoreDetail: null,
+      storePerfSortCol: 'rate',
+      storePerfSortAsc: false,
+      topStoreSortCol: 'exits',
+      topStoreSortAsc: false,
+      topDeptSortCol: 'exits',
+      topDeptSortAsc: false
+    };
+
+    let filterDebounceTimer = null;
+    let problemPosModal = null;
+
+    // Fix modal stacking - properly handle z-index when multiple modals open
+    (function() {
+      let modalCount = 0;
+      document.addEventListener('show.bs.modal', function(e) {
+        modalCount++;
+        if (modalCount > 1) {
+          document.body.classList.add('modal-stack');
+          let zModal = 1050 + (modalCount * 20);
+          let zBackdrop = zModal - 10;
+          e.target.style.zIndex = zModal;
+          setTimeout(() => {
+            let bds = document.querySelectorAll('.modal-backdrop');
+            if (bds.length > 0) bds[bds.length - 1].style.zIndex = zBackdrop;
+          }, 0);
+        }
+      });
+      document.addEventListener('hidden.bs.modal', function(e) {
+        modalCount = Math.max(0, modalCount - 1);
+        e.target.style.zIndex = '';
+        if (modalCount === 0) {
+          document.body.classList.remove('modal-stack');
+        } else {
+          // Keep body scrollable for remaining modal
+          document.body.classList.add('modal-open');
+          document.body.style.overflow = 'hidden';
+        }
+      });
+    })();
+
+    function escapeHTML(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeStr(str) {
+      return (!str) ? '' : str.replace(/'/g, "\\'");
+    }
+
+    function cleanStr(s) {
+      if(!s) return "";
+      let str = String(s).replace(/\s+/g, ' ').trim();
+      if (str.startsWith("#") || str.toLowerCase() === "nan") return "";
+      if (/^[\d\.]+$/.test(str)) return String(parseInt(str, 10));
+      return str;
+    }
+
+    function formatNumber(value, digits = 0) {
+      const num = Number(value || 0);
+      return num.toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function formatPercent(value, digits = 1) {
+      return formatNumber(value || 0, digits) + '%';
+    }
+
+    function parseDateStrict(str) {
+      if (!str) return null;
+      if (str instanceof Date) return str;
+      let s = String(str).trim();
+      if (s === "" || s.toLowerCase() === "nan" || s === "-") return null;
+
+      if (s.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}.*/)) {
+        let parts = s.split(/[-/ T]/);
+        let y = parseInt(parts[0], 10);
+        if (y > 2400) y -= 543;
+        return new Date(y, parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      }
+
+      let parts = s.split(/[-/]/);
+      if (parts.length >= 3) {
+        let p1 = parseInt(parts[0], 10);
+        let p2 = parseInt(parts[1], 10);
+        let p3 = parseInt(parts[2], 10);
+        let day = p1, month = p2, year = p3;
+        if (p2 > 12 && p1 <= 12) { month = p1; day = p2; }
+        if (year < 100) year += 2000;
+        if (year > 2400) year -= 543;
+        if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+        let parsedDate = new Date(year, month - 1, day);
+        if (isNaN(parsedDate.getTime())) return null;
+        return parsedDate;
+      }
+      return null;
+    }
+
+    function parsePastDate(str) {
+      let parsedDate = parseDateStrict(str);
+      if (!parsedDate) return null;
+      let parts = String(str).trim().split(/[-/]/);
+      if(parts.length < 3) return parsedDate;
+      if (String(str).trim().match(/^\d{4}[-/]/)) return parsedDate;
+
+      let day = parseInt(parts[0], 10);
+      let month = parseInt(parts[1], 10);
+      let year = parseInt(parts[2], 10);
+      if (year < 100) year += 2000;
+      if (year > 2400) year -= 543;
+
+      let today = new Date();
+      today.setHours(23, 59, 59, 999);
+
+      if (parsedDate > today && day <= 12) {
+        let swappedDate = new Date(year, day - 1, month);
+        if (swappedDate <= today) return swappedDate;
+      }
+      return parsedDate;
+    }
+
+    function formatDateIso(d) {
+      return d.getFullYear() + '-' +
+        String(d.getMonth()+1).padStart(2,'0') + '-' +
+        String(d.getDate()).padStart(2,'0');
+    }
+
+    function gas(method, ...args) {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)[method](...args);
+      });
+    }
+
+    function setQuickDate(type) {
+      let today = new Date();
+      document.getElementById('dateEnd').valueAsDate = today;
+      if(type === 'mtd') {
+        document.getElementById('dateStart').valueAsDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      } else if(type === 'ytd') {
+        document.getElementById('dateStart').valueAsDate = new Date(today.getFullYear(), 0, 1);
+      }
+      triggerFilters();
+    }
+
+    function showLoading(text) {
+      document.getElementById('loading').style.display = 'flex';
+      if (text) document.getElementById('loadingText').innerText = text;
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function destroyChart(name) {
+      if (appState.charts[name]) {
+        appState.charts[name].destroy();
+        delete appState.charts[name];
+      }
+    }
+
+    function switchModule(moduleName) {
+      $('.module-tab').removeClass('active');
+      $(`.module-tab[data-module="${moduleName}"]`).addClass('active');
+      $('.module-pane').removeClass('active');
+      $('#module-' + moduleName).addClass('active');
+      setTimeout(() => {
+        Object.values(appState.charts).forEach(c => { if (c && c.resize) c.resize(); });
+      }, 100);
+    }
+
+    function initDashboard(payload) {
+      let res = (typeof payload === 'string') ? JSON.parse(payload) : payload;
+      if(res.error) {
+        alert("Error: " + res.message);
+        hideLoading();
+        return;
+      }
+
+      appState.rawData = res;
+      appState.storeMetaMap = {};
+      appState.baseTargetKeys = new Set();
+
+      // === Patch Join Date for Converted Staff ===
+      // Find Temp/Outsource records with "to Permanent" resign reason
+      // Match them to Perm records by Name + Store + (Term date = Join date)
+      // Replace Perm joinDate with Temp joinDate for continuous tenure
+      if (res.staff) {
+        let conversionMap = {}; // key: "name|store|termDate" → earliest joinDate
+        res.staff.forEach(emp => {
+          if (!isConversion(emp.resignReason)) return;
+          let name = (emp.empName || '').trim().toLowerCase();
+          if (!name) return;
+          let store = cleanStr(emp.storeNo);
+          let tDate = (emp.termDate || '').trim();
+          if (!tDate) return;
+          let mapKey = name + '|' + store + '|' + tDate;
+          let existingJoin = conversionMap[mapKey];
+          if (!existingJoin || emp.joinDate < existingJoin) {
+            conversionMap[mapKey] = emp.joinDate;
+          }
+        });
+
+        // Now patch Perm records: if name+store+joinDate matches a conversion termDate
+        let patchCount = 0;
+        res.staff.forEach(emp => {
+          if (isConversion(emp.resignReason)) return; // skip conversion records themselves
+          let name = (emp.empName || '').trim().toLowerCase();
+          if (!name) return;
+          let store = cleanStr(emp.storeNo);
+          let jDate = (emp.joinDate || '').trim();
+          if (!jDate) return;
+          let lookupKey = name + '|' + store + '|' + jDate;
+          if (conversionMap[lookupKey]) {
+            emp.originalJoinDate = emp.joinDate; // keep original
+            emp.joinDate = conversionMap[lookupKey]; // replace with temp's joinDate
+            patchCount++;
+          }
+        });
+
+        if (patchCount > 0) {
+          console.log('✅ Patched ' + patchCount + ' converted staff with original Temp/Outsource join dates');
+        }
+      }
+
+      if (res.targets) {
+        res.targets.forEach(d => {
+          let key = cleanStr(d.storeNo);
+          appState.storeMetaMap[key] = {
+            od: cleanStr(d.od),
+            area: cleanStr(d.subregion || d.area),
+            regionalCEO: cleanStr(d.regionalCEO || ''),
+            format: cleanStr(d.format),
+            name: d.storeName,
+            focus: cleanStr(d.storeFocus)
+          };
+          appState.baseTargetKeys.add(key + "|" + cleanStr(d.dept).toLowerCase());
+        });
+      }
+
+      initFilters();
+      document.querySelectorAll('.module-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchModule(btn.dataset.module));
+      });
+
+      document.querySelectorAll('#tableStorePerformance thead th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+          const key = th.dataset.sort;
+          if (appState.storePerfSortCol === key) {
+            appState.storePerfSortAsc = !appState.storePerfSortAsc;
+          } else {
+            appState.storePerfSortCol = key;
+            appState.storePerfSortAsc = (key === 'no' || key === 'name');
+          }
+          renderStorePerformanceTable();
+        });
+      });
+
+      // Sort listeners for Top 10 Store table
+      document.querySelectorAll('#tableTopBranches thead th[data-sort-top]').forEach(th => {
+        th.addEventListener('click', () => {
+          const key = th.dataset.sortTop;
+          if (appState.topStoreSortCol === key) {
+            appState.topStoreSortAsc = !appState.topStoreSortAsc;
+          } else {
+            appState.topStoreSortCol = key;
+            appState.topStoreSortAsc = (key === 'store-name');
+          }
+          renderTopBranches();
+        });
+      });
+
+      // Sort listeners for Top 10 Dept table
+      document.querySelectorAll('#tableTopPos thead th[data-sort-top]').forEach(th => {
+        th.addEventListener('click', () => {
+          const key = th.dataset.sortTop;
+          if (appState.topDeptSortCol === key) {
+            appState.topDeptSortAsc = !appState.topDeptSortAsc;
+          } else {
+            appState.topDeptSortCol = key;
+            appState.topDeptSortAsc = (key === 'dept-name');
+          }
+          renderTopPositions();
+        });
+      });
+
+      hideLoading();
+    }
+
+    function initFilters() {
+      let today = new Date();
+      let startDef = new Date(today.getFullYear(), 0, 1);
+      $('#dateEnd').val(formatDateIso(today));
+      $('#dateStart').val(formatDateIso(startDef));
+
+      const defaultChecks = ["Temporary", "Student", "Staff", "Officer", "Supv.", "SM", "Manager", "ASGM", "SGM"];
+      $('.chk-Level').prop('checked', false);
+      defaultChecks.forEach(l => { $(`.chk-Level[value="${cleanStr(l)}"]`).prop('checked', true); });
+      checkLevelState('Level');
+
+      handleScopeChange(true);
+      triggerFilters();
+    }
+
+    function resetFilters() {
+      let today = new Date();
+      let startDef = new Date(today.getFullYear(), 0, 1);
+      $('#dateEnd').val(formatDateIso(today));
+      $('#dateStart').val(formatDateIso(startDef));
+      $('#selStoreScope').val('all');
+
+      const defaultChecks = ["Temporary", "Student", "Staff", "Officer", "Supv.", "SM", "Manager", "ASGM", "SGM"];
+      $('.chk-Level').prop('checked', false);
+      defaultChecks.forEach(l => { $(`.chk-Level[value="${cleanStr(l)}"]`).prop('checked', true); });
+      checkLevelState('Level');
+
+      handleScopeChange(true);
+      triggerFilters();
+    }
+
+    function selectAllInSelect(id) {
+      const el = document.getElementById(id);
+      Array.from(el.options).forEach(o => o.selected = true);
+      triggerFilters();
+    }
+
+    function clearSelect(id) {
+      const el = document.getElementById(id);
+      Array.from(el.options).forEach(o => o.selected = false);
+      triggerFilters();
+    }
+
+    function renderChips(id, values) {
+      let html = '';
+      values.forEach(v => {
+        const disp = (v ?? '').toString().trim();
+        const val = cleanStr(disp);
+        html += `<div class="chip" data-val="${val}" onclick="toggleChip(this); triggerFilters()">${escapeHTML(disp)}</div>`;
+      });
+      $('#' + id).html(html);
+    }
+
+    function toggleChip(el) {
+      $(el).toggleClass('active');
+    }
+
+    function getActiveChips(id) {
+      return $('#' + id + ' .chip.active').map(function() {
+        return $(this).data('val') || cleanStr($(this).text());
+      }).get();
+    }
+
+    function toggleAllLevels(source, type) {
+      let isChecked = $(source).prop('checked');
+      $(`.chk-${type}`).prop('checked', isChecked);
+      triggerFilters();
+    }
+
+    function checkLevelState(type) {
+      let total = $(`.chk-${type}`).length;
+      let checked = $(`.chk-${type}:checked`).length;
+      $('#lvlAll').prop('checked', total === checked);
+    }
+
+    function renderSelectOptions(selectId, items, selectAll = false) {
+      const el = document.getElementById(selectId);
+      const currentSelected = Array.from(el.selectedOptions).map(o => o.value);
+      const lookup = {};
+      currentSelected.forEach(v => { lookup[v] = true; });
+
+      const html = items.map(item => {
+        const value = typeof item === 'string' ? item : item.val;
+        const label = typeof item === 'string' ? item : item.label;
+        let selected = selectAll || lookup[value] ? 'selected' : '';
+        return `<option value="${escapeHTML(value)}" ${selected}>${escapeHTML(label)}</option>`;
+      }).join('');
+      el.innerHTML = html;
+    }
+
+    function handleScopeChange(isInit = false) {
+      let scopeVal = $('#selStoreScope').val();
+      let filteredTargets = appState.rawData.targets || [];
+
+      if (scopeVal !== 'all') {
+        let searchStr = scopeVal.toLowerCase();
+        filteredTargets = filteredTargets.filter(d => {
+          let focusStr = (d.storeFocus || "").toString().toLowerCase();
+          return focusStr.includes(searchStr);
+        });
+      }
+
+      let fmts = [...new Set(filteredTargets.map(d => cleanStr(d.format)))].filter(Boolean).sort();
+      let ods = [...new Set(filteredTargets.map(d => cleanStr(d.od)))].filter(Boolean).sort();
+      let ceos = [...new Set(filteredTargets.map(d => cleanStr(d.regionalCEO || '')))].filter(Boolean).sort();
+      let areas = [...new Set(filteredTargets.map(d => cleanStr(d.subregion || d.area)))].filter(Boolean).sort();
+      let depts = [...new Set(filteredTargets.map(d => cleanStr(d.dept)))].filter(Boolean).sort();
+      let stores = [...new Set(filteredTargets.map(d => d.storeNo))].sort((a,b) => parseInt(a) - parseInt(b));
+
+      let storeItems = stores.map(s => {
+        let key = cleanStr(s);
+        let n = appState.storeMetaMap[key] ? appState.storeMetaMap[key].name : "";
+        return { val: key, label: s + ' - ' + n };
+      });
+
+      // Fix: When scope changes (not init), clear all multiselect selections
+      // so they reset to show all available options for the new scope
+      if (!isInit) {
+        ['formatSelect','ceoSelect','odSelect','areaSelect','storeSelect'].forEach(id => {
+          Array.from(document.getElementById(id).options).forEach(o => o.selected = false);
+        });
+      }
+
+      renderSelectOptions('formatSelect', fmts, false);
+      renderSelectOptions('ceoSelect', ceos, false);
+      renderSelectOptions('odSelect', ods, false);
+      renderSelectOptions('areaSelect', areas, false);
+      renderSelectOptions('storeSelect', storeItems, false);
+      renderSelectOptions('deptSelect', depts, true);
+
+      if (!isInit) triggerFilters();
+    }
+
+    function getCurrentFilters() {
+      let dStartVal = $('#dateStart').val();
+      let dEndVal = $('#dateEnd').val();
+
+      if (dStartVal && dEndVal && new Date(dStartVal) > new Date(dEndVal)) {
+        let temp = dStartVal;
+        dStartVal = dEndVal;
+        dEndVal = temp;
+        $('#dateStart').val(dStartVal);
+        $('#dateEnd').val(dEndVal);
+      }
+
+      let dStart = new Date(dStartVal);
+      dStart.setHours(0,0,0,0);
+
+      let dEnd = new Date(dEndVal);
+      dEnd.setHours(23,59,59,999);
+
+      let selectedLevels = [];
+      $('.chk-Level:checked').each(function() {
+        selectedLevels.push(cleanStr($(this).val()));
+      });
+
+      return {
+        dStart,
+        dEnd,
+        activeFilters: {
+          fmt: Array.from(document.getElementById('formatSelect').selectedOptions).map(o => cleanStr(o.value)),
+          regionalCEO: Array.from(document.getElementById('ceoSelect').selectedOptions).map(o => cleanStr(o.value)),
+          od: Array.from(document.getElementById('odSelect').selectedOptions).map(o => cleanStr(o.value)),
+          area: Array.from(document.getElementById('areaSelect').selectedOptions).map(o => cleanStr(o.value)),
+          store: Array.from(document.getElementById('storeSelect').selectedOptions).map(o => cleanStr(o.value)),
+          dept: Array.from(document.getElementById('deptSelect').selectedOptions).map(o => cleanStr(o.value)),
+          isFocus: $('#selStoreScope').val(),
+          levels: selectedLevels,
+          excludeConversion: document.getElementById('toggleExcludeConvert').checked
+        }
+      };
+    }
+
+    function triggerFilters() {
+      if (!appState.isLoading) {
+        $('canvas').addClass('chart-updating');
+        $('#sync-indicator').fadeIn(100);
+      }
+
+      if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+
+      filterDebounceTimer = setTimeout(function() {
+        try {
+          calculateTurnoverData();
+        } catch (err) {
+          console.error("Calculate Error:", err);
+          document.getElementById('loadingText').innerText = "Calc Error: " + err.message;
+        }
+      }, 300);
+    }
+
+    function checkChipMatch(storeNo, dept, recordMeta, filters) {
+      const key = cleanStr(storeNo);
+      const d = cleanStr(dept).toLowerCase();
+
+      if (!appState.baseTargetKeys.has(key + "|" + d)) return false;
+
+      const meta = appState.storeMetaMap[key] || { od: "", area: "", regionalCEO: "", format: "", focus: "" };
+      const fmt = cleanStr(meta.format || (recordMeta && recordMeta.format) || "");
+      // 🌟 รองรับ subregion (ใหม่) และ area (เก่า) - ใช้ตัวแปร 'area' ภายในเพื่อ backward compat
+      const area = cleanStr(meta.area || (recordMeta && (recordMeta.subregion || recordMeta.area)) || "");
+      const od = cleanStr(meta.od || (recordMeta && recordMeta.od) || "");
+      const regionalCEO = cleanStr(meta.regionalCEO || (recordMeta && recordMeta.regionalCEO) || "");
+      let rowLevel = cleanStr((recordMeta && recordMeta.level) || "");
+
+      if (filters.isFocus && filters.isFocus !== 'all') {
+        let focusStr = (meta.focus || "").toString().toLowerCase();
+        let searchStr = filters.isFocus.toString().toLowerCase();
+        if (!focusStr.includes(searchStr)) return false;
+      }
+
+      if (filters.levels && filters.levels.length > 0) {
+        let match = filters.levels.some(l => l.toLowerCase() === rowLevel.toLowerCase());
+        if (!match) return false;
+      }
+
+      if (filters.fmt.length > 0 && !filters.fmt.includes(fmt)) return false;
+      if (filters.od.length > 0 && !filters.od.includes(od)) return false;
+      if (filters.regionalCEO && filters.regionalCEO.length > 0 && !filters.regionalCEO.includes(regionalCEO)) return false;
+      if (filters.area.length > 0 && !filters.area.includes(area)) return false;
+      if (filters.store.length > 0 && !filters.store.includes(key)) return false;
+      if (filters.dept.length > 0 && !filters.dept.includes(cleanStr(dept))) return false;
+
+      return true;
+    }
+
+    function isConversion(resignReason) {
+      if (!resignReason) return false;
+      let r = resignReason.toLowerCase();
+      return r.includes('to permanent') || r.includes('to temporary') || r.includes('to outsource');
+    }
+
+    function categorizeDept(deptName) {
+      let d = cleanStr(deptName).toLowerCase();
+
+      if (d.includes('picker') || d.includes('loader') || d.includes('packer') || d.includes('admin o2o') || d.includes('o2o')) {
+        return { group: 'O2O', key: deptName };
+      }
+
+      if (d.includes('b2b') || d.includes('credit sales')) {
+        return { group: 'B2B', key: deptName };
+      }
+
+      if (
+        d.includes('goods receiving') ||
+        d.includes('alc') ||
+        d.includes('general affair') ||
+        d.includes('human resources') ||
+        d.includes('store center') ||
+        d.includes('customer service') ||
+        d.includes('store safety') ||
+        d.includes('administration')
+      ) {
+        return { group: 'Support', key: deptName };
+      }
+
+      return { group: 'Floor', key: deptName };
+    }
+
+    function buildLatestTargets(rawTargets, dEnd, activeFilters) {
+      const latestTargetMap = {};
+
+      (rawTargets || []).forEach((t, idx) => {
+        if (!checkChipMatch(t.storeNo, t.dept, t, activeFilters)) return;
+
+        const sKey = cleanStr(t.storeNo);
+        const dept = cleanStr(t.dept) || 'Unknown Dept';
+        const level = cleanStr(t.level) || 'Unknown Level';
+        const dedupeKey = [sKey, dept.toLowerCase(), level.toLowerCase()].join('|');
+
+        const eff = parsePastDate(t.effectiveDate) || new Date(2000, 0, 1);
+        if (eff > dEnd) return;
+
+        const effTime = eff.getTime();
+        const prev = latestTargetMap[dedupeKey];
+        if (!prev || effTime > prev.effTime || (effTime === prev.effTime && idx > prev.idx)) {
+          latestTargetMap[dedupeKey] = { row: t, effTime, idx };
+        }
+      });
+
+      return latestTargetMap;
+    }
+
+    function calculateTurnoverData() {
+      let { dStart, dEnd, activeFilters } = getCurrentFilters();
+
+      let m = { activeStart: 0, activeEnd: 0, hires: 0, exits: 0, tenure_lt30: 0, tenure_30_90: 0, tenure_90_365: 0, tenure_365_1095: 0, tenureReasons: {} };
+      let reasonMap = {};
+      let onboard = [
+        { total: 0, exits: 0 }, // 0-14 days
+        { total: 0, exits: 0 }, // 15-30 days
+        { total: 0, exits: 0 }, // 31-60 days
+        { total: 0, exits: 0 }, // 61-90 days
+        { total: 0, exits: 0 }  // 91-119 days
+      ];
+      let sMap = {};
+      let pMap = {};
+      let tMap = {};
+
+      let seenCurrEmpIds = new Set();
+      let seenPrevEmpIds = new Set();
+      let seenHireKeys = new Set();
+      let seenTermKeys = new Set();
+
+      if (appState.rawData.targets) {
+        const latestTargetMap = buildLatestTargets(appState.rawData.targets, dEnd, activeFilters);
+
+        Object.values(latestTargetMap).forEach(({ row: t }) => {
+          let sKey = cleanStr(t.storeNo);
+          let dept = cleanStr(t.dept) || 'Unknown Dept';
+          let sName = sKey + ' - ' + ((appState.storeMetaMap[sKey] && appState.storeMetaMap[sKey].name) || 'Unknown');
+          let cat = categorizeDept(dept);
+          let funcGroup = cat.group;
+
+          if(!sMap[sKey]) {
+            sMap[sKey] = {
+              storeNo: sKey,
+              name: ((appState.storeMetaMap[sKey] && appState.storeMetaMap[sKey].name) || 'Unknown'),
+              start: 0,
+              end: 0,
+              hires: 0,
+              exits: 0,
+              target: 0,
+              tenure: { lt30: 0, d30_90: 0, d90_365: 0, d365_1095: 0 },
+              depts: {},
+              funcGroups: {},
+              timeline: {}
+            };
+          }
+
+          if(!sMap[sKey].depts[dept]) sMap[sKey].depts[dept] = { start: 0, end: 0, exits: 0, hires: 0, target: 0 };
+          if(!sMap[sKey].funcGroups[funcGroup]) sMap[sKey].funcGroups[funcGroup] = { start: 0, end: 0, hires: 0, exits: 0, target: 0, positions: {} };
+          if(!sMap[sKey].funcGroups[funcGroup].positions[dept]) sMap[sKey].funcGroups[funcGroup].positions[dept] = { start: 0, end: 0, hires: 0, exits: 0, target: 0 };
+
+          let tgt = parseInt(t.target || 0, 10) || 0;
+          sMap[sKey].target += tgt;
+          sMap[sKey].depts[dept].target += tgt;
+          sMap[sKey].funcGroups[funcGroup].target += tgt;
+          sMap[sKey].funcGroups[funcGroup].positions[dept].target += tgt;
+        });
+      }
+
+      if (appState.rawData.staff) {
+        appState.rawData.staff.forEach(emp => {
+          if(!checkChipMatch(emp.storeNo, emp.dept, emp, activeFilters)) return;
+
+          let empId = cleanStr(emp.empId);
+          let empStatus = String(emp.status || '').toLowerCase().trim();
+          let isStatusActive = false;
+          let empResignReason = (emp.resignReason || '').trim();
+          let empIsConversion = isConversion(empResignReason);
+          let shouldExclude = activeFilters.excludeConversion && empIsConversion;
+          if (emp.status) {
+            if (empStatus === 'active' || (empStatus.includes('active') && !empStatus.includes('inactive'))) {
+              isStatusActive = true;
+            }
+          }
+
+          let jDate = parsePastDate(emp.joinDate);
+          let tDate = parsePastDate(emp.termDate);
+
+          let dept = cleanStr(emp.dept) || "Unknown Dept";
+          let sKey = cleanStr(emp.storeNo);
+          let storeNameOnly = ((appState.storeMetaMap[sKey] && appState.storeMetaMap[sKey].name) || 'Unknown');
+
+          let cat = categorizeDept(dept);
+          let funcGroup = cat.group;
+
+          if(!sMap[sKey]) {
+            sMap[sKey] = {
+              storeNo: sKey,
+              name: storeNameOnly,
+              start: 0,
+              end: 0,
+              hires: 0,
+              exits: 0,
+              target: 0,
+              tenure: { lt30: 0, d30_90: 0, d90_365: 0, d365_1095: 0 },
+              depts: {},
+              funcGroups: {},
+              timeline: {}
+            };
+          }
+
+          if(!sMap[sKey].depts[dept]) sMap[sKey].depts[dept] = { start: 0, end: 0, exits: 0, hires: 0, target: 0 };
+          if(!sMap[sKey].funcGroups[funcGroup]) sMap[sKey].funcGroups[funcGroup] = { start: 0, end: 0, hires: 0, exits: 0, target: 0, positions: {} };
+          if(!sMap[sKey].funcGroups[funcGroup].positions[dept]) sMap[sKey].funcGroups[funcGroup].positions[dept] = { start: 0, end: 0, hires: 0, exits: 0, target: 0 };
+
+          if(!pMap[dept]) pMap[dept] = { dept: dept, hires: 0, exits: 0, start: 0, end: 0, funcGroup: funcGroup, reasons: {}, tenure: { lt30:0, d30_90:0, d90_365:0, d365_1095:0, gt1095:0, reasons: {} }, timeline: {} };
+
+          let isStartedStart = jDate ? (jDate <= dStart) : isStatusActive;
+          let isNotTerminatedStart = !tDate || tDate > dStart;
+          let isActiveAtStart = isStartedStart && isNotTerminatedStart;
+
+          if (isActiveAtStart) {
+            let k = empId || Math.random();
+            if (!seenPrevEmpIds.has(k)) {
+              m.activeStart++;
+              sMap[sKey].start++;
+              sMap[sKey].depts[dept].start++;
+              sMap[sKey].funcGroups[funcGroup].start++;
+              sMap[sKey].funcGroups[funcGroup].positions[dept].start++;
+              pMap[dept].start++;
+              if(empId) seenPrevEmpIds.add(k);
+            }
+          }
+
+          let isStartedEnd = jDate ? (jDate <= dEnd) : isStatusActive;
+          let isNotTerminatedEnd = !tDate || tDate > dEnd;
+          let isActiveAtEnd = isStartedEnd && isNotTerminatedEnd;
+
+          if (isActiveAtEnd) {
+            let k = empId || Math.random();
+            if (!seenCurrEmpIds.has(k)) {
+              m.activeEnd++;
+              sMap[sKey].end++;
+              sMap[sKey].depts[dept].end++;
+              sMap[sKey].funcGroups[funcGroup].end++;
+              sMap[sKey].funcGroups[funcGroup].positions[dept].end++;
+              pMap[dept].end++;
+              if(empId) seenCurrEmpIds.add(k);
+            }
+          }
+
+          if (jDate && jDate >= dStart && jDate <= dEnd) {
+            let hk = empId ? empId + "_" + jDate.getTime() : Math.random();
+            if (!seenHireKeys.has(hk)) {
+              m.hires++;
+              sMap[sKey].hires++;
+              sMap[sKey].depts[dept].hires++;
+              sMap[sKey].funcGroups[funcGroup].hires++;
+              sMap[sKey].funcGroups[funcGroup].positions[dept].hires++;
+              pMap[dept].hires++;
+
+              let mKey = jDate.getFullYear() + "-" + ("0" + (jDate.getMonth() + 1)).slice(-2);
+              if(!tMap[mKey]) tMap[mKey] = { hires: 0, exits: 0 };
+              tMap[mKey].hires++;
+
+              if(!sMap[sKey].timeline[mKey]) sMap[sKey].timeline[mKey] = { hires: 0, exits: 0 };
+              sMap[sKey].timeline[mKey].hires++;
+
+              if(!pMap[dept].timeline[mKey]) pMap[dept].timeline[mKey] = { hires: 0, exits: 0 };
+              pMap[dept].timeline[mKey].hires++;
+
+              seenHireKeys.add(hk);
+            }
+          }
+
+          if (tDate && tDate >= dStart && tDate <= dEnd && !shouldExclude) {
+            let tk = empId ? empId + "_" + tDate.getTime() : Math.random();
+            if (!seenTermKeys.has(tk)) {
+              m.exits++;
+              sMap[sKey].exits++;
+              sMap[sKey].depts[dept].exits++;
+              sMap[sKey].funcGroups[funcGroup].exits++;
+              sMap[sKey].funcGroups[funcGroup].positions[dept].exits++;
+              pMap[dept].exits++;
+
+              // Track resign reason (global + dept)
+              if (empResignReason) {
+                if (!reasonMap[empResignReason]) reasonMap[empResignReason] = 0;
+                reasonMap[empResignReason]++;
+                pMap[dept].reasons[empResignReason] = (pMap[dept].reasons[empResignReason] || 0) + 1;
+              }
+
+              let mKey = tDate.getFullYear() + "-" + ("0" + (tDate.getMonth() + 1)).slice(-2);
+              if(!tMap[mKey]) tMap[mKey] = { hires: 0, exits: 0 };
+              tMap[mKey].exits++;
+
+              if(!sMap[sKey].timeline[mKey]) sMap[sKey].timeline[mKey] = { hires: 0, exits: 0 };
+              sMap[sKey].timeline[mKey].exits++;
+
+              if(!pMap[dept].timeline[mKey]) pMap[dept].timeline[mKey] = { hires: 0, exits: 0 };
+              pMap[dept].timeline[mKey].exits++;
+
+              if (jDate) {
+                let diffDays = Math.ceil(Math.abs(tDate - jDate) / (1000 * 60 * 60 * 24));
+                let tBucket = 'gt1095';
+                if (diffDays < 30) { m.tenure_lt30++; sMap[sKey].tenure.lt30++; tBucket = 'lt30'; }
+                else if (diffDays <= 90) { m.tenure_30_90++; sMap[sKey].tenure.d30_90++; tBucket = 'd30_90'; }
+                else if (diffDays <= 365) { m.tenure_90_365++; sMap[sKey].tenure.d90_365++; tBucket = 'd90_365'; }
+                else if (diffDays <= 1095) { m.tenure_365_1095++; sMap[sKey].tenure.d365_1095++; tBucket = 'd365_1095'; }
+
+                pMap[dept].tenure[tBucket]++;
+
+                // Track resign reason per tenure bucket (dept-level)
+                if (empResignReason) {
+                  if (!pMap[dept].tenure.reasons[tBucket]) pMap[dept].tenure.reasons[tBucket] = {};
+                  pMap[dept].tenure.reasons[tBucket][empResignReason] = (pMap[dept].tenure.reasons[tBucket][empResignReason] || 0) + 1;
+                }
+
+                // Track resign reason per tenure bucket (global + store)
+                if (empResignReason) {
+                  if (!m.tenureReasons[tBucket]) m.tenureReasons[tBucket] = {};
+                  m.tenureReasons[tBucket][empResignReason] = (m.tenureReasons[tBucket][empResignReason] || 0) + 1;
+                  if (!sMap[sKey].tenure.reasons) sMap[sKey].tenure.reasons = {};
+                  if (!sMap[sKey].tenure.reasons[tBucket]) sMap[sKey].tenure.reasons[tBucket] = {};
+                  sMap[sKey].tenure.reasons[tBucket][empResignReason] = (sMap[sKey].tenure.reasons[tBucket][empResignReason] || 0) + 1;
+                }
+              }
+
+              seenTermKeys.add(tk);
+            }
+          }
+        });
+      }
+
+      // === Onboarding Success Analysis ===
+      // Separate pass: for each hire in the period, determine tenure and bucket
+      // tenure = dEnd − joinDate (if still active) or termDate − joinDate (if exited in period)
+      if (appState.rawData.staff) {
+        let seenOnboardIds = new Set();
+        appState.rawData.staff.forEach(emp => {
+          if (!checkChipMatch(emp.storeNo, emp.dept, emp, activeFilters)) return;
+          let empId = cleanStr(emp.empId);
+          let jDate = parsePastDate(emp.joinDate);
+          let tDate = parsePastDate(emp.termDate);
+          if (!jDate || jDate < dStart || jDate > dEnd) return; // only hires in period
+          let ok = empId ? empId + "_onb" : Math.random();
+          if (seenOnboardIds.has(ok)) return;
+          seenOnboardIds.add(ok);
+
+          let shouldSkipExit = activeFilters.excludeConversion && isConversion((emp.resignReason || '').trim());
+          let hasExitedInPeriod = tDate && tDate >= dStart && tDate <= dEnd && !shouldSkipExit;
+          let tenureDays = hasExitedInPeriod
+            ? Math.ceil(Math.abs(tDate - jDate) / (1000 * 60 * 60 * 24))
+            : Math.ceil(Math.abs(dEnd - jDate) / (1000 * 60 * 60 * 24));
+
+          let bi = -1;
+          if (tenureDays <= 14) bi = 0;
+          else if (tenureDays <= 30) bi = 1;
+          else if (tenureDays <= 60) bi = 2;
+          else if (tenureDays <= 90) bi = 3;
+          else if (tenureDays <= 119) bi = 4;
+
+          if (bi >= 0) {
+            onboard[bi].total++;
+            if (hasExitedInPeriod) onboard[bi].exits++;
+          }
+        });
+      }
+
+      m.avgHC = (m.activeStart + m.activeEnd) / 2;
+      m.rate = (m.avgHC + m.exits) > 0 ? (m.exits / (m.avgHC + m.exits)) * 100 : 0;
+      m.growth = m.hires - m.exits;
+
+      let storesArr = [];
+      Object.keys(sMap).forEach(k => {
+        let s = sMap[k];
+        s.avg = (s.start + s.end) / 2;
+        s.rate = (s.avg + s.exits) > 0 ? (s.exits / (s.avg + s.exits)) * 100 : 0;
+        s.currentActive = s.end;
+        s.fillRate = s.target > 0 ? (s.currentActive / s.target) * 100 : 0;
+
+        Object.keys(s.depts).forEach(d => {
+          let dAvg = (s.depts[d].start + s.depts[d].end) / 2;
+          s.depts[d].rate = (dAvg + s.depts[d].exits) > 0 ? (s.depts[d].exits / (dAvg + s.depts[d].exits)) * 100 : 0;
+        });
+
+        ['Support','Floor','O2O','B2B'].forEach(g => {
+          if(!s.funcGroups[g]) s.funcGroups[g] = { start:0, end:0, hires:0, exits:0, target:0, positions:{} };
+          let fg = s.funcGroups[g];
+          fg.avg = (fg.start + fg.end) / 2;
+          fg.rate = (fg.avg + fg.exits) > 0 ? (fg.exits / (fg.avg + fg.exits)) * 100 : 0;
+        });
+
+        if (s.avg > 0 || s.exits > 0 || s.target > 0) storesArr.push({ no: k, ...s });
+      });
+
+      let deptsArr = [];
+      Object.keys(pMap).forEach(k => {
+        let d = pMap[k];
+        let avg = (d.start + d.end) / 2;
+        if (d.exits > 0 || avg > 0 || d.hires > 0) {
+          deptsArr.push({
+            dept: k,
+            hires: d.hires || 0,
+            exits: d.exits,
+            rate: (avg + d.exits) > 0 ? (d.exits / (avg + d.exits)) * 100 : 0,
+            funcGroup: d.funcGroup,
+            reasons: d.reasons || {},
+            tenure: d.tenure || {},
+            timeline: d.timeline || {}
+          });
+        }
+      });
+
+      appState.data = { metrics: m, stores: storesArr, depts: deptsArr, timeline: tMap, rawStores: sMap, onboard: onboard, reasonMap: reasonMap };
+      renderDashboard();
+
+      if (appState.isLoading) {
+        appState.isLoading = false;
+      } else {
+        $('canvas').removeClass('chart-updating');
+        $('#sync-indicator').fadeOut(100);
+      }
+    }
+
+    function renderDashboard() {
+      let d = appState.data;
+      let m = d.metrics;
+
+      $('#kpiActive').text(Math.round(m.activeEnd).toLocaleString());
+      $('#kpiHires').text(m.hires.toLocaleString());
+      $('#kpiResigned').text(m.exits.toLocaleString());
+      $('#kpiRate').text(m.rate.toFixed(1) + "%");
+
+      // Fix 5: Dynamic formula description based on MTD/YTD
+      let dStartVal = $('#dateStart').val();
+      let dEndVal = $('#dateEnd').val();
+      let dStartDate = new Date(dStartVal);
+      let dEndDate = new Date(dEndVal);
+      let today = new Date();
+      let periodLabel = '';
+      if (dStartDate.getFullYear() === today.getFullYear() && dStartDate.getMonth() === 0 && dStartDate.getDate() === 1) {
+        periodLabel = 'YTD';
+      } else if (dStartDate.getFullYear() === today.getFullYear() && dStartDate.getMonth() === today.getMonth() && dStartDate.getDate() === 1) {
+        periodLabel = 'MTD';
+      } else {
+        let ds = dStartDate.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'2-digit'});
+        let de = dEndDate.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'2-digit'});
+        periodLabel = ds + ' – ' + de;
+      }
+
+      let formulaText = '';
+      if (periodLabel === 'YTD' || periodLabel === 'MTD') {
+        formulaText = `Resign ${periodLabel} / (Avg HC ${periodLabel} + Resign ${periodLabel}) × 100`;
+        $('#kpiRateTitle').text(`Turnover Rate (${periodLabel})`);
+      } else {
+        formulaText = `Resign / (Avg HC + Resign) × 100 | ${periodLabel}`;
+        $('#kpiRateTitle').text('Turnover Rate');
+      }
+      formulaText += ` = ${m.exits.toLocaleString()} / (${Math.round(m.avgHC).toLocaleString()} + ${m.exits.toLocaleString()})`;
+      $('#kpiAvgActive').text(formulaText);
+
+      let tenureTotal90 = m.tenure_lt30 + m.tenure_30_90;
+      $('#kpiEarly').text(tenureTotal90.toLocaleString());
+      $('#kpiEarlySub').text(m.exits > 0 ? `${((tenureTotal90 / m.exits) * 100).toFixed(1)}% of resignations (within 90 days)` : 'No exits');
+
+      let growthEl = $('#kpiGrowth');
+      let boxGrowth = $('#boxNetGrowth');
+      growthEl.text((m.growth > 0 ? '+' : '') + m.growth.toLocaleString());
+
+      if (m.growth < 0) {
+        growthEl.css('color', '#C41E3A');
+        $('#kpiGrowthBar').css('background', '#C41E3A');
+        boxGrowth.find('.icon-wrapper').removeClass('bg-green-soft').addClass('bg-red-soft');
+      } else {
+        growthEl.css('color', '#0D7C3F');
+        $('#kpiGrowthBar').css('background', '#0D7C3F');
+        boxGrowth.find('.icon-wrapper').removeClass('bg-red-soft').addClass('bg-green-soft');
+      }
+
+      $('#kpiGrowthSub').text(`Hires ${m.hires.toLocaleString()} / Resigns ${m.exits.toLocaleString()}`);
+
+      renderOnboardingChart();
+      renderTenureExitChart();
+      renderTrendChart();
+      renderTopBranches();
+      renderTopPositions();
+      renderStorePerformanceTable();
+      renderExecReasonCharts();
+
+      $('#snapshotTime').text('Updated ' + new Date().toLocaleString());
+    }
+
+    function renderOnboardingChart() {
+      let ob = appState.data.onboard; // array of { total, exits }
+      let bucketLabels = ['0-14 Days', '15-30 Days', '31-60 Days', '61-90 Days', '91-119 Days'];
+      let hireCounts = ob.map(b => b.total);
+      let exitCounts = ob.map(b => b.exits);
+      let turnoverPcts = ob.map(b => b.total > 0 ? ((b.exits / b.total) * 100) : 0);
+
+      destroyChart('onboarding');
+      let ctx = document.getElementById('chartOnboarding').getContext('2d');
+      appState.charts['onboarding'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: bucketLabels,
+          datasets: [
+            {
+              label: 'Hires (คนในช่วงอายุงาน)',
+              data: hireCounts,
+              backgroundColor: '#2563EB',
+              borderRadius: 4,
+              yAxisID: 'y',
+              order: 2
+            },
+            {
+              label: 'Turnover %',
+              data: turnoverPcts,
+              type: 'line',
+              borderColor: '#C41E3A',
+              backgroundColor: '#C41E3A',
+              tension: 0.3,
+              borderWidth: 3,
+              pointRadius: 6,
+              pointBackgroundColor: '#C41E3A',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              yAxisID: 'y1',
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  let i = ctx.dataIndex;
+                  if (ctx.datasetIndex === 0) {
+                    return `Hires: ${hireCounts[i]} คน (Exits: ${exitCounts[i]}, Active: ${hireCounts[i] - exitCounts[i]})`;
+                  }
+                  return `Turnover: ${ctx.raw.toFixed(1)}% (${exitCounts[i]} ออก / ${hireCounts[i]} คนในช่วงนี้)`;
+                }
+              }
+            },
+            datalabels: {
+              display: function(context) { return context.dataset.data[context.dataIndex] > 0; },
+              color: function(context) { return context.datasetIndex === 0 ? '#fff' : '#C41E3A'; },
+              font: { weight: 'bold', size: 11 },
+              anchor: function(context) { return context.datasetIndex === 0 ? 'center' : 'end'; },
+              align: function(context) { return context.datasetIndex === 0 ? 'center' : 'top'; },
+              formatter: function(value, context) {
+                if (context.datasetIndex === 1) return value.toFixed(1) + '%';
+                return value.toLocaleString();
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Hires (จำนวนคนในช่วงอายุงาน)', font: { size: 11 } },
+              grid: { borderDash: [4, 4] }
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'right',
+              title: { display: true, text: 'Turnover % (ออก / คนในช่วง)', font: { size: 11 } },
+              grid: { display: false },
+              ticks: { callback: v => v.toFixed(1) + '%' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderTenureExitChart() {
+      let m = appState.data.metrics;
+      let tenureLabels = ['< 30 Days', '30-90 Days', '90 Days – 1 Year', '1 – 3 Years', '> 3 Years'];
+      let tenureData = [m.tenure_lt30, m.tenure_30_90, m.tenure_90_365, m.tenure_365_1095];
+      let tenureSum = tenureData.reduce((a, b) => a + b, 0);
+      let remaining = Math.max(0, m.exits - tenureSum);
+      tenureData.push(remaining);
+
+      let tenureColors = ['#C41E3A', '#D97706', '#2563EB', '#7C3AED', '#8B95A5'];
+      let tenureInsights = [
+        'ปัญหาการคัดกรองคน / วันแรกทำงาน',
+        'ปัญหาช่วงทดลองงาน / การสอนงาน',
+        'ความผูกพัน / บรรยากาศในทีม',
+        'ความก้าวหน้า / การปรับเงินเดือน',
+        'อื่น ๆ / พ้นช่วงวิเคราะห์'
+      ];
+      let tenureKeys = ['lt30', 'd30_90', 'd90_365', 'd365_1095', 'gt1095'];
+
+      // Store for drill-down
+      appState.tenureMeta = { labels: tenureLabels, data: tenureData, colors: tenureColors, insights: tenureInsights, keys: tenureKeys };
+
+      destroyChart('tenureExit');
+      let ctx = document.getElementById('chartTenureExit').getContext('2d');
+      appState.charts['tenureExit'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: tenureLabels,
+          datasets: [{
+            data: tenureData,
+            backgroundColor: tenureColors,
+            borderWidth: 2,
+            borderColor: '#fff',
+            hoverOffset: 8,
+            hoverBorderWidth: 3,
+            hoverBorderColor: '#1B2A4A'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '58%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                afterLabel: function() { return 'Click to drill down'; }
+              }
+            },
+            datalabels: {
+              color: '#fff',
+              font: { weight: 'bold', size: 11 },
+              formatter: (v) => v > 0 ? v : ''
+            }
+          },
+          onClick: function(evt, elements) {
+            if (elements.length > 0) {
+              let idx = elements[0].index;
+              openTenureDetailModal(idx);
+            }
+          }
+        }
+      });
+
+      // Render clickable legend with insights
+      let legendHtml = '';
+      tenureLabels.forEach((label, i) => {
+        let pct = m.exits > 0 ? ((tenureData[i] / m.exits) * 100).toFixed(1) : '0.0';
+        legendHtml += `<div class="d-flex align-items-start gap-2 mb-1 tenure-clickable" style="padding:3px 6px;" onclick="openTenureDetailModal(${i})">
+          <span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:${tenureColors[i]}; flex-shrink:0; margin-top:4px;"></span>
+          <span><b>${label}</b> ${tenureData[i]} (${pct}%) — <span class="text-muted">${tenureInsights[i]}</span>
+          <i class="bi bi-box-arrow-up-right small text-muted ms-1"></i></span>
+        </div>`;
+      });
+      document.getElementById('tenureExitLegend').innerHTML = legendHtml;
+    }
+
+    function openTenureDetailModal(bucketIndex) {
+      let meta = appState.tenureMeta;
+      if (!meta) return;
+
+      let label = meta.labels[bucketIndex];
+      let count = meta.data[bucketIndex];
+      let color = meta.colors[bucketIndex];
+      let insight = meta.insights[bucketIndex];
+      let key = meta.keys[bucketIndex];
+      let m = appState.data.metrics;
+
+      document.getElementById('tenureDetailModalTitle').innerHTML =
+        `<i class="bi bi-clock-history me-2" style="color:#F0B040;"></i>Tenure Exit: ${escapeHTML(label)}`;
+      document.getElementById('tenureDetailCount').innerText = count.toLocaleString();
+      document.getElementById('tenureDetailCount').style.color = color;
+      document.getElementById('tenureDetailPct').innerText =
+        m.exits > 0 ? `${((count / m.exits) * 100).toFixed(1)}% of total ${m.exits.toLocaleString()} exits` : 'No exits';
+      document.getElementById('tenureDetailInsight').innerHTML =
+        `<span style="color:${color};">●</span> ${escapeHTML(insight)}`;
+
+      // Build store-level data for this bucket
+      let stores = appState.data.stores || [];
+      let rows = [];
+      stores.forEach(s => {
+        let bucketExits = 0;
+        switch(key) {
+          case 'lt30': bucketExits = s.tenure ? s.tenure.lt30 || 0 : 0; break;
+          case 'd30_90': bucketExits = s.tenure ? s.tenure.d30_90 || 0 : 0; break;
+          case 'd90_365': bucketExits = s.tenure ? s.tenure.d90_365 || 0 : 0; break;
+          case 'd365_1095': bucketExits = s.tenure ? s.tenure.d365_1095 || 0 : 0; break;
+          case 'gt1095': {
+            let tracked = s.tenure ? (s.tenure.lt30||0)+(s.tenure.d30_90||0)+(s.tenure.d90_365||0)+(s.tenure.d365_1095||0) : 0;
+            bucketExits = Math.max(0, (s.exits||0) - tracked);
+            break;
+          }
+        }
+        if (bucketExits > 0) {
+          rows.push({
+            storeNo: s.no || s.storeNo,
+            name: s.name,
+            bucketExits: bucketExits,
+            totalExits: s.exits || 0,
+            pctOfStore: (s.exits > 0) ? ((bucketExits / s.exits) * 100) : 0
+          });
+        }
+      });
+
+      rows.sort((a, b) => b.bucketExits - a.bucketExits);
+
+      let html = '';
+      rows.forEach((r, i) => {
+        html += `<tr class="clickable-row" onclick="openStoreModal('${escapeStr(r.storeNo)}')">
+          <td>${i + 1}</td>
+          <td>${escapeHTML(r.storeNo)}</td>
+          <td class="text-start fw-semibold">${escapeHTML(r.name)}</td>
+          <td class="fw-bold" style="color:${color};">${r.bucketExits}</td>
+          <td>${r.totalExits}</td>
+          <td>${r.pctOfStore.toFixed(1)}%</td>
+        </tr>`;
+      });
+
+      document.getElementById('tenureDetailModalBody').innerHTML =
+        html || '<tr><td colspan="6" class="text-center py-4 text-muted">No stores in this bucket.</td></tr>';
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('tenureDetailModal')).show();
+    }
+
+    function renderTrendChart() {
+      let tKeys = Object.keys(appState.data.timeline).sort();
+      let hData = tKeys.map(k => appState.data.timeline[k].hires);
+      let eData = tKeys.map(k => appState.data.timeline[k].exits);
+      let labels = tKeys.map(k => {
+        let p = k.split('-');
+        const mN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return mN[parseInt(p[1], 10)-1] + ' ' + p[0].substring(2);
+      });
+
+      destroyChart('trend');
+
+      let ctx = document.getElementById('chartTrend').getContext('2d');
+      appState.charts['trend'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Hires', data: hData, borderColor: '#059669', backgroundColor: '#059669', tension: 0.3, borderWidth: 3, pointRadius: 4 },
+            { label: 'Exits', data: eData, borderColor: '#ED1C24', backgroundColor: '#ED1C24', tension: 0.3, borderWidth: 3, pointRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top' },
+            datalabels: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { borderDash: [4, 4] } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderTopBranches() {
+      let rows = [...(appState.data.stores || [])];
+      let sortCol = appState.topStoreSortCol;
+      let sortAsc = appState.topStoreSortAsc;
+
+      rows.sort((a, b) => {
+        let av, bv;
+        switch (sortCol) {
+          case 'store-name': av = a.name || ''; bv = b.name || ''; return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+          case 'store-hires': av = a.hires || 0; bv = b.hires || 0; break;
+          case 'store-rate': av = a.rate || 0; bv = b.rate || 0; break;
+          default: av = a.exits || 0; bv = b.exits || 0; break;
+        }
+        if (av !== bv) return sortAsc ? av - bv : bv - av;
+        return (b.rate || 0) - (a.rate || 0);
+      });
+      let topStores = rows.slice(0, 10);
+
+      let tb = '';
+      topStores.forEach((b, i) => {
+        let rHtml = i < 3 ? `<span class="rank-badge rank-${i+1}">${i+1}</span>` : `<span class="rank-badge rank-other">${i+1}</span>`;
+        tb += `<tr class="clickable-row" onclick="openStoreModal('${escapeStr(b.no)}')">
+          <td class="text-center">${rHtml}</td>
+          <td class="text-start fw-bold" style="color:#0B1C3C;">${escapeHTML(b.name)}</td>
+          <td class="text-muted">${formatNumber(b.hires)}</td>
+          <td class="fw-bold">${b.exits}</td>
+          <td class="text-danger fw-bold">${b.rate.toFixed(1)}%</td>
+        </tr>`;
+      });
+
+      document.getElementById('tableTopBranches').querySelector('tbody').innerHTML = tb || '<tr><td colspan="5">No data</td></tr>';
+    }
+
+    function renderTopPositions() {
+      let rows = [...(appState.data.depts || [])];
+      let sortCol = appState.topDeptSortCol;
+      let sortAsc = appState.topDeptSortAsc;
+
+      rows.sort((a, b) => {
+        let av, bv;
+        switch (sortCol) {
+          case 'dept-name': av = a.dept || ''; bv = b.dept || ''; return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+          case 'dept-hires': av = a.hires || 0; bv = b.hires || 0; break;
+          case 'dept-rate': av = a.rate || 0; bv = b.rate || 0; break;
+          default: av = a.exits || 0; bv = b.exits || 0; break;
+        }
+        if (av !== bv) return sortAsc ? av - bv : bv - av;
+        return (b.rate || 0) - (a.rate || 0);
+      });
+      let topPos = rows.slice(0, 10);
+
+      let tbP = '';
+      topPos.forEach((p, i) => {
+        let rHtml = i < 3 ? `<span class="rank-badge rank-${i+1}">${i+1}</span>` : `<span class="rank-badge rank-other">${i+1}</span>`;
+        tbP += `<tr class="clickable-row" data-problem-dept="${escapeHTML(p.dept)}">
+          <td class="text-center">${rHtml}</td>
+          <td class="text-start fw-bold" style="color:#0B1C3C;">${escapeHTML(p.dept)} <i class="bi bi-box-arrow-up-right small text-muted ms-1"></i></td>
+          <td class="text-muted">${formatNumber(p.hires)}</td>
+          <td class="fw-bold">${p.exits}</td>
+          <td class="text-danger fw-bold">${p.rate.toFixed(1)}%</td>
+        </tr>`;
+      });
+
+      const topPosTbody = document.getElementById('tableTopPos').querySelector('tbody');
+      topPosTbody.innerHTML = tbP || '<tr><td colspan="5">No data</td></tr>';
+      topPosTbody.querySelectorAll('tr[data-problem-dept]').forEach(tr => {
+        tr.addEventListener('click', () => openProblematicPositionModal(tr.dataset.problemDept));
+      });
+    }
+
+    function getStorePerfSortValue(row, key) {
+      const fg = row.funcGroups || {};
+      switch (key) {
+        case 'no': return parseInt(row.no, 10) || 0;
+        case 'name': return row.name || '';
+        case 'target': return row.target || 0;
+        case 'currentActive': return row.currentActive || 0;
+        case 'fillRate': return row.fillRate || 0;
+        case 'hireSupport': return fg.Support ? fg.Support.hires || 0 : 0;
+        case 'hireFloor': return fg.Floor ? fg.Floor.hires || 0 : 0;
+        case 'hireO2O': return fg.O2O ? fg.O2O.hires || 0 : 0;
+        case 'hireB2B': return fg.B2B ? fg.B2B.hires || 0 : 0;
+        case 'hires': return row.hires || 0;
+        case 'exitSupport': return fg.Support ? fg.Support.exits || 0 : 0;
+        case 'exitFloor': return fg.Floor ? fg.Floor.exits || 0 : 0;
+        case 'exitO2O': return fg.O2O ? fg.O2O.exits || 0 : 0;
+        case 'exitB2B': return fg.B2B ? fg.B2B.exits || 0 : 0;
+        case 'exits': return row.exits || 0;
+        case 'toSupport': return fg.Support ? fg.Support.rate || 0 : 0;
+        case 'toFloor': return fg.Floor ? fg.Floor.rate || 0 : 0;
+        case 'toO2O': return fg.O2O ? fg.O2O.rate || 0 : 0;
+        case 'toB2B': return fg.B2B ? fg.B2B.rate || 0 : 0;
+        case 'rate': return row.rate || 0;
+        default: return 0;
+      }
+    }
+
+    function perfRateClass(val) {
+      return val >= 20 ? 'text-danger fw-bold' : (val >= 10 ? 'text-primary fw-bold' : '');
+    }
+
+    function renderStorePerformanceTable() {
+      let rows = [...(appState.data.stores || [])];
+      let key = appState.storePerfSortCol || 'rate';
+
+      rows.sort((a, b) => {
+        let av = getStorePerfSortValue(a, key);
+        let bv = getStorePerfSortValue(b, key);
+        if (typeof av === 'string' || typeof bv === 'string') {
+          return appState.storePerfSortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+        }
+        return appState.storePerfSortAsc ? av - bv : bv - av;
+      });
+
+      let html = '';
+      rows.forEach(row => {
+        const fg = row.funcGroups || {};
+        const support = fg.Support || { hires:0, exits:0, rate:0 };
+        const floor = fg.Floor || { hires:0, exits:0, rate:0 };
+        const o2o = fg.O2O || { hires:0, exits:0, rate:0 };
+        const b2b = fg.B2B || { hires:0, exits:0, rate:0 };
+        let sNo = escapeStr(row.no);
+
+        html += `<tr>
+          <td class="clickable-row" onclick="openStoreModal('${sNo}')" style="cursor:pointer;"><u>${escapeHTML(row.no)}</u></td>
+          <td class="text-start fw-bold clickable-row" onclick="openStoreModal('${sNo}')" style="min-width:260px; white-space:normal; line-height:1.35; cursor:pointer; color:#1B2A4A;"><u>${escapeHTML(row.name)}</u></td>
+          <td>${formatNumber(row.target || 0)}</td>
+          <td>${formatNumber(row.currentActive || 0)}</td>
+          <td class="${(row.fillRate || 0) < 95 ? 'text-danger fw-bold' : 'text-success fw-bold'}">${(row.fillRate || 0).toFixed(1)}%</td>
+
+          <td>${formatNumber(support.hires || 0)}</td>
+          <td>${formatNumber(floor.hires || 0)}</td>
+          <td>${formatNumber(o2o.hires || 0)}</td>
+          <td>${formatNumber(b2b.hires || 0)}</td>
+          <td class="fw-bold perf-group-end">${formatNumber(row.hires || 0)}</td>
+
+          <td class="text-danger fw-bold perf-group-start">${formatNumber(support.exits || 0)}</td>
+          <td class="text-danger fw-bold">${formatNumber(floor.exits || 0)}</td>
+          <td class="text-danger fw-bold">${formatNumber(o2o.exits || 0)}</td>
+          <td class="text-danger fw-bold">${formatNumber(b2b.exits || 0)}</td>
+          <td class="text-danger fw-bold perf-group-end">${formatNumber(row.exits || 0)}</td>
+
+          <td class="perf-group-start ${perfRateClass(support.rate || 0)} clickable-row" style="cursor:pointer;" onclick="openStoreTurnoverDrill('${sNo}','Support')">${(support.rate || 0).toFixed(1)}%</td>
+          <td class="${perfRateClass(floor.rate || 0)} clickable-row" style="cursor:pointer;" onclick="openStoreTurnoverDrill('${sNo}','Floor')">${(floor.rate || 0).toFixed(1)}%</td>
+          <td class="${perfRateClass(o2o.rate || 0)} clickable-row" style="cursor:pointer;" onclick="openStoreTurnoverDrill('${sNo}','O2O')">${(o2o.rate || 0).toFixed(1)}%</td>
+          <td class="${perfRateClass(b2b.rate || 0)} clickable-row" style="cursor:pointer;" onclick="openStoreTurnoverDrill('${sNo}','B2B')">${(b2b.rate || 0).toFixed(1)}%</td>
+          <td class="${perfRateClass(row.rate || 0)} clickable-row" style="cursor:pointer;" onclick="openStoreModal('${sNo}')">${(row.rate || 0).toFixed(1)}%</td>
+        </tr>`;
+      });
+
+      document.getElementById('tbodyStorePerformance').innerHTML = html || '<tr><td colspan="20" class="py-4 text-muted text-center">No data available.</td></tr>';
+    }
+
+    function exportStorePerformanceExcel() {
+      let rows = [...(appState.data.stores || [])];
+      if (!rows.length) {
+        alert('No data to export.');
+        return;
+      }
+
+      let data = [[
+        'Store No','Store Name','Target','Current Active','Fill %',
+        'Hire Support','Hire Floor','Hire O2O','Hire B2B','Hire Total',
+        'Exit Support','Exit Floor','Exit O2O','Exit B2B','Exit Total',
+        'TO Support %','TO Floor %','TO O2O %','TO B2B %','TO Total %'
+      ]];
+
+      rows.forEach(row => {
+        const fg = row.funcGroups || {};
+        const support = fg.Support || { hires:0, exits:0, rate:0 };
+        const floor = fg.Floor || { hires:0, exits:0, rate:0 };
+        const o2o = fg.O2O || { hires:0, exits:0, rate:0 };
+        const b2b = fg.B2B || { hires:0, exits:0, rate:0 };
+
+        data.push([
+          row.no, row.name, row.target || 0, row.currentActive || 0, (row.fillRate || 0).toFixed(1) + '%',
+          support.hires || 0, floor.hires || 0, o2o.hires || 0, b2b.hires || 0, row.hires || 0,
+          support.exits || 0, floor.exits || 0, o2o.exits || 0, b2b.exits || 0, row.exits || 0,
+          (support.rate || 0).toFixed(1) + '%', (floor.rate || 0).toFixed(1) + '%', (o2o.rate || 0).toFixed(1) + '%', (b2b.rate || 0).toFixed(1) + '%', (row.rate || 0).toFixed(1) + '%'
+        ]);
+      });
+
+      let wb = XLSX.utils.book_new();
+      let ws = XLSX.utils.aoa_to_sheet(data);
+
+      const headerStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '004A99' } },
+        alignment: { horizontal: 'center' }
+      };
+
+      for (let c = 0; c < data[0].length; c++) {
+        let cell = XLSX.utils.encode_cell({ r: 0, c });
+        if (ws[cell]) ws[cell].s = headerStyle;
+      }
+
+      ws['!cols'] = [
+        {wch:10},{wch:28},{wch:10},{wch:14},{wch:10},
+        {wch:12},{wch:12},{wch:12},{wch:12},{wch:12},
+        {wch:12},{wch:12},{wch:12},{wch:12},{wch:12},
+        {wch:12},{wch:12},{wch:12},{wch:12},{wch:12}
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Store Performance');
+      XLSX.writeFile(wb, 'Store_Performance_Table.xlsx');
+    }
+
+    function categorizeExitReason(reason) {
+      if (!reason) return 'Other';
+      let r = reason.toLowerCase();
+      if (r.startsWith('resign')) return 'Resign';
+      if (r.startsWith('discharge')) return 'Discharge';
+      return 'Other';
+    }
+
+    function renderExecReasonCharts() {
+      let rm = appState.data.reasonMap || {};
+      let entries = Object.entries(rm).map(([reason, count]) => ({
+        reason, count, category: categorizeExitReason(reason)
+      }));
+      entries.sort((a, b) => b.count - a.count);
+      let totalExits = entries.reduce((s, e) => s + e.count, 0);
+
+      // Store for drill-down
+      appState.execReasonEntries = entries;
+      appState.execReasonTotal = totalExits;
+
+      // 1. Horizontal bar: Top 12 reasons
+      let top12 = entries.slice(0, 12);
+      let catColors = { 'Resign': '#C41E3A', 'Discharge': '#D97706', 'Other': '#6B7280' };
+
+      destroyChart('execReasons');
+      let ctx1 = document.getElementById('chartExecReasons');
+      if (ctx1) {
+        appState.charts['execReasons'] = new Chart(ctx1.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: top12.map(e => e.reason.length > 35 ? e.reason.substring(0, 33) + '…' : e.reason),
+            datasets: [{
+              data: top12.map(e => e.count),
+              backgroundColor: top12.map(e => catColors[e.category] || '#6B7280'),
+              borderRadius: 4
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  afterLabel: () => 'Click to drill down',
+                  label: function(ctx) {
+                    let e = top12[ctx.dataIndex];
+                    let pct = totalExits > 0 ? ((e.count / totalExits) * 100).toFixed(1) : '0';
+                    return `${e.count} exits (${pct}%) — ${e.category}`;
+                  }
+                }
+              },
+              datalabels: {
+                anchor: 'end', align: 'end',
+                color: '#1B2A4A', font: { weight: 'bold', size: 10 },
+                formatter: (v, ctx) => {
+                  let pct = totalExits > 0 ? ((v / totalExits) * 100).toFixed(1) : '0';
+                  return v > 0 ? `${v} (${pct}%)` : '';
+                }
+              }
+            },
+            scales: {
+              x: { beginAtZero: true, grid: { borderDash: [4, 4] }, ticks: { font: { size: 10 } } },
+              y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            },
+            onClick: function(evt, elements) {
+              if (elements.length > 0) {
+                let idx = elements[0].index;
+                openReasonDrill('reason', top12[idx].reason);
+              }
+            }
+          }
+        });
+      }
+
+      // 2. Doughnut: Category mix
+      let catMap = {};
+      entries.forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.count; });
+      let catEntries = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+
+      destroyChart('execCategory');
+      let ctx2 = document.getElementById('chartExecCategory');
+      if (ctx2) {
+        appState.charts['execCategory'] = new Chart(ctx2.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: catEntries.map(e => e[0]),
+            datasets: [{
+              data: catEntries.map(e => e[1]),
+              backgroundColor: catEntries.map(e => catColors[e[0]] || '#94A3B8'),
+              borderWidth: 2, borderColor: '#fff'
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { afterLabel: () => 'Click to drill down' } },
+              datalabels: { color: '#fff', font: { weight: 'bold', size: 12 }, formatter: v => v > 0 ? v : '' }
+            },
+            onClick: function(evt, elements) {
+              if (elements.length > 0) {
+                let idx = elements[0].index;
+                openReasonDrill('category', catEntries[idx][0]);
+              }
+            }
+          }
+        });
+      }
+
+      // Legend (clickable)
+      let legHtml = '';
+      catEntries.forEach(([cat, cnt]) => {
+        let pct = totalExits > 0 ? ((cnt / totalExits) * 100).toFixed(1) : '0.0';
+        legHtml += `<div class="d-flex align-items-center gap-2 mb-1 tenure-clickable" style="padding:2px 4px; cursor:pointer;" onclick="openReasonDrill('category','${escapeStr(cat)}')">
+          <span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:${catColors[cat]||'#94A3B8'}; flex-shrink:0;"></span>
+          <span><b>${escapeHTML(cat)}</b> — ${cnt.toLocaleString()} (${pct}%) <i class="bi bi-box-arrow-up-right small text-muted"></i></span>
+        </div>`;
+      });
+      let legEl = document.getElementById('execCategoryLegend');
+      if (legEl) legEl.innerHTML = legHtml;
+    }
+
+    function openStoreModal(storeNo) {
+      let store = appState.data.rawStores[storeNo];
+      if(!store) return;
+      appState.currentStoreDetail = store;
+      document.getElementById('storeReasonPanel').style.display = 'none';
+
+      let avg = (store.start + store.end) / 2;
+      let rate = (avg + store.exits) > 0 ? (store.exits / (avg + store.exits)) * 100 : 0;
+      
+      document.getElementById('modalStoreTitle').innerHTML = `<i class="bi bi-shop me-2 text-warning"></i>${escapeHTML(store.name)}`;
+      document.getElementById('mAvg').innerText = formatNumber(store.hires || 0);
+      document.getElementById('mExits').innerText = store.exits.toLocaleString();
+      document.getElementById('mRate').innerText = rate.toFixed(1) + '%';
+      document.getElementById('mBench').innerText = appState.data.metrics.rate.toFixed(1) + '%';
+
+      let tKeys = Object.keys(store.timeline).sort();
+      let hData = tKeys.map(k => store.timeline[k].hires);
+      let eData = tKeys.map(k => store.timeline[k].exits);
+      let labels = tKeys.map(k => {
+        let p = k.split('-');
+        const mN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return mN[parseInt(p[1], 10)-1] + ' ' + p[0].substring(2);
+      });
+
+      destroyChart('modTrend');
+      let ctx1 = document.getElementById('modalChartTrend').getContext('2d');
+      appState.charts['modTrend'] = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Hires', data: hData, borderColor: '#0D7C3F', backgroundColor: '#0D7C3F', tension: 0.3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#0D7C3F' },
+            { label: 'Exits', data: eData, borderColor: '#C41E3A', backgroundColor: '#C41E3A', tension: 0.3, borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#C41E3A' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, datalabels: { display: false } },
+          scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { borderDash: [4, 4] } } }
+        }
+      });
+
+      let tenureStoreData = [store.tenure.lt30, store.tenure.d30_90, store.tenure.d90_365, store.tenure.d365_1095];
+      let tSum = tenureStoreData.reduce((a,b)=>a+b, 0);
+      let remaining = Math.max(0, store.exits - tSum);
+      let eLabels = ['< 30 Days', '30-90 Days', '90D – 1Y', '1 – 3Y', '> 3 Years'];
+      let eVals = [...tenureStoreData, remaining];
+
+      let tenureBucketKeys = ['lt30', 'd30_90', 'd90_365', 'd365_1095', 'gt1095'];
+      let tenureBucketLabels = ['< 30 Days', '30-90 Days', '90D – 1Y', '1 – 3Y', '> 3 Years'];
+
+      destroyChart('modEarly');
+      let ctx2 = document.getElementById('modalChartEarly').getContext('2d');
+      appState.charts['modEarly'] = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: eLabels,
+          datasets: [{ data: eVals, backgroundColor: ['#C41E3A', '#D97706', '#3B82F6', '#8B5CF6', '#94A3B8'], borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 12, font: {size: 11} } },
+            tooltip: { callbacks: { afterLabel: () => 'Click to see reasons' } },
+            datalabels: { color: '#fff', font: {weight: 'bold'}, formatter: (v) => v > 0 ? v : '' }
+          },
+          onClick: function(evt, elements) {
+            if (elements.length > 0) {
+              let idx = elements[0].index;
+              showStoreReasonBreakdown(store, tenureBucketKeys[idx], tenureBucketLabels[idx], eVals[idx]);
+            }
+          }
+        }
+      });
+
+      let deptArr = Object.keys(store.depts).map(k => {
+        let d = store.depts[k];
+        let dAvg = (d.start + d.end) / 2;
+        return {
+          name: k,
+          hires: d.hires || 0,
+          exits: d.exits,
+          rate: (dAvg + d.exits) > 0 ? (d.exits / (dAvg + d.exits)) * 100 : 0
+        };
+      });
+
+      deptArr.sort((a,b) => b.rate - a.rate);
+
+      let tbHtml = '';
+      deptArr.forEach(d => {
+        if(d.exits > 0 || d.hires > 0) {
+          tbHtml += `<tr>
+            <td class="text-start ps-3 fw-bold" style="color: #0B1C3C;">${escapeHTML(d.name)}</td>
+            <td class="text-muted">${formatNumber(d.hires)}</td>
+            <td class="text-danger fw-bold">${d.exits}</td>
+            <td class="${d.rate>20?'text-danger fw-bold':''}">${d.rate.toFixed(1)}%</td>
+          </tr>`;
+        }
+      });
+
+      document.getElementById('modalTableDepts').querySelector('tbody').innerHTML = tbHtml || '<tr><td colspan="4">No data</td></tr>';
+      new bootstrap.Modal(document.getElementById('storeModal')).show();
+    }
+
+    function showStoreReasonBreakdown(store, bucketKey, bucketLabel, exitCount) {
+      let reasons = (store.tenure && store.tenure.reasons && store.tenure.reasons[bucketKey]) || {};
+      let entries = Object.entries(reasons).map(([r, c]) => ({ reason: r, count: c }));
+      entries.sort((a, b) => b.count - a.count);
+      let total = entries.reduce((s, e) => s + e.count, 0);
+
+      document.getElementById('storeReasonTitle').innerHTML =
+        `Resign Reasons — <b>${escapeHTML(bucketLabel)}</b> (${exitCount} exits)`;
+
+      let html = '';
+      entries.forEach((e, i) => {
+        let pct = total > 0 ? ((e.count / total) * 100).toFixed(1) : '0.0';
+        html += `<tr>
+          <td>${i + 1}</td>
+          <td class="text-start">${escapeHTML(e.reason)}</td>
+          <td class="fw-bold">${e.count}</td>
+          <td>${pct}%</td>
+        </tr>`;
+      });
+
+      document.getElementById('storeReasonBody').innerHTML =
+        html || '<tr><td colspan="4" class="text-center py-3 text-muted">No reason data for this bucket</td></tr>';
+      document.getElementById('storeReasonPanel').style.display = 'block';
+      document.getElementById('storeReasonPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function updateFilterBadge(selectId, badgeId) {
+      let el = document.getElementById(selectId);
+      let count = el.selectedOptions.length;
+      let badge = document.getElementById(badgeId);
+      badge.textContent = count > 0 ? count : '';
+    }
+
+    function selectAllFilters() {
+      ['formatSelect','ceoSelect','odSelect','areaSelect','storeSelect','deptSelect'].forEach(id => {
+        selectAllInSelect(id);
+        let badgeMap = { formatSelect:'badgeFmt', ceoSelect:'badgeCEO', odSelect:'badgeOd', areaSelect:'badgeArea', storeSelect:'badgeStore', deptSelect:'badgeDept' };
+        if (badgeMap[id]) updateFilterBadge(id, badgeMap[id]);
+      });
+      triggerFilters();
+    }
+
+    function clearAllFilters() {
+      ['formatSelect','ceoSelect','odSelect','areaSelect','storeSelect','deptSelect'].forEach(id => {
+        clearSelect(id);
+        let badgeMap = { formatSelect:'badgeFmt', ceoSelect:'badgeCEO', odSelect:'badgeOd', areaSelect:'badgeArea', storeSelect:'badgeStore', deptSelect:'badgeDept' };
+        if (badgeMap[id]) updateFilterBadge(id, badgeMap[id]);
+      });
+      triggerFilters();
+    }
+
+    function exportModalExcel() {
+      if (!appState.currentStoreDetail) return;
+
+      let store = appState.currentStoreDetail;
+      let wb = XLSX.utils.book_new();
+      let wsData = [
+        ["Store Detail Report"],
+        ["Store Name", store.name],
+        ["Hires", store.hires || 0],
+        ["Total Exits", store.exits || 0],
+        [],
+        ["Department Breakdown"],
+        ["Department", "Hires", "Exits", "Turnover Rate (%)"]
+      ];
+
+      let deptArr = Object.keys(store.depts).map(k => {
+        let d = store.depts[k];
+        let dAvg = (d.start + d.end) / 2;
+        return {
+          name: k,
+          hires: d.hires || 0,
+          exits: d.exits,
+          rate: (dAvg + d.exits) > 0 ? (d.exits / (dAvg + d.exits)) * 100 : 0
+        };
+      });
+
+      deptArr.sort((a,b) => b.rate - a.rate);
+      deptArr.forEach(d => {
+        if(d.exits > 0 || d.hires > 0) {
+          wsData.push([d.name, d.hires, d.exits, d.rate.toFixed(1) + '%']);
+        }
+      });
+
+      let ws = XLSX.utils.aoa_to_sheet(wsData);
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "0B1C3C" } },
+        alignment: { horizontal: "center" }
+      };
+
+      for (let C = 0; C < 4; ++C) {
+        let cell = XLSX.utils.encode_cell({ r: 6, c: C });
+        if (ws[cell]) ws[cell].s = headerStyle;
+      }
+
+      ws['!cols'] = [{wch:30}, {wch:15}, {wch:15}, {wch:20}];
+      XLSX.utils.book_append_sheet(wb, ws, "Store Detail");
+      XLSX.writeFile(wb, `Turnover_Detail_${store.storeNo || 'Store'}.xlsx`);
+    }
+
+    function openProblematicPositionModal(deptName) {
+      let stores = [...(appState.data.stores || [])];
+      let deptData = (appState.data.depts || []).find(d => d.dept === deptName);
+      let m = appState.data.metrics;
+
+      // KPIs
+      let dExits = deptData ? deptData.exits : 0;
+      let dHires = deptData ? deptData.hires : 0;
+      let dRate = deptData ? deptData.rate : 0;
+      document.getElementById('deptModalExits').innerText = dExits.toLocaleString();
+      document.getElementById('deptModalHires').innerText = dHires.toLocaleString();
+      document.getElementById('deptModalRate').innerText = dRate.toFixed(1) + '%';
+      document.getElementById('deptModalBench').innerText = m.rate.toFixed(1) + '%';
+
+      // Title
+      document.getElementById('problemPosModalTitle').innerHTML =
+        `<i class="bi bi-diagram-3 me-2" style="color:#F0B040;"></i>${escapeHTML(deptName)}`;
+
+      // Store breakdown
+      let rows = [];
+      stores.forEach(s => {
+        let ds = s.depts && s.depts[deptName] ? s.depts[deptName] : null;
+        if (!ds) return;
+        let avg = (Number(ds.start||0) + Number(ds.end||0)) / 2;
+        let exits = Number(ds.exits||0);
+        let rate = (avg + exits) > 0 ? (exits / (avg + exits)) * 100 : 0;
+        if (avg > 0 || exits > 0 || Number(ds.hires||0) > 0) {
+          rows.push({ storeNo: s.no, name: s.name, hires: Number(ds.hires||0), exits, rate });
+        }
+      });
+      rows.sort((a, b) => b.exits !== a.exits ? b.exits - a.exits : b.rate - a.rate);
+
+      let storeHtml = '';
+      rows.forEach((r, i) => {
+        storeHtml += `<tr>
+          <td>${i+1}</td><td>${escapeHTML(r.storeNo)}</td>
+          <td class="text-start fw-semibold">${escapeHTML(r.name)}</td>
+          <td>${formatNumber(r.hires)}</td>
+          <td class="fw-bold">${formatNumber(r.exits)}</td>
+          <td class="${r.rate>20?'text-danger fw-bold':''}">${r.rate.toFixed(1)}%</td></tr>`;
+      });
+      document.getElementById('problemPosModalBody').innerHTML =
+        storeHtml || '<tr><td colspan="6" class="text-center py-3 text-muted">No data</td></tr>';
+
+      // Resign Reasons
+      let reasons = deptData ? deptData.reasons || {} : {};
+      let rEntries = Object.entries(reasons).sort((a,b) => b[1]-a[1]);
+      let rTotal = rEntries.reduce((s,e) => s+e[1], 0);
+      let rHtml = '';
+      rEntries.forEach(([r, c], i) => {
+        let pct = rTotal > 0 ? ((c/rTotal)*100).toFixed(1) : '0.0';
+        rHtml += `<tr><td>${i+1}</td><td class="text-start">${escapeHTML(r)}</td><td class="fw-bold">${c}</td><td>${pct}%</td></tr>`;
+      });
+      document.getElementById('deptModalReasons').innerHTML =
+        rHtml || '<tr><td colspan="4" class="text-center py-3 text-muted">No reason data</td></tr>';
+
+      // Trend chart
+      let tl = deptData ? deptData.timeline || {} : {};
+      let tKeys = Object.keys(tl).sort();
+      let mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      let tLabels = tKeys.map(k => { let p=k.split('-'); return mNames[parseInt(p[1],10)-1]+' '+p[0].substring(2); });
+      let tHires = tKeys.map(k => tl[k].hires || 0);
+      let tExits = tKeys.map(k => tl[k].exits || 0);
+
+      destroyChart('deptTrend');
+      let ctxT = document.getElementById('deptModalTrend');
+      if (ctxT) {
+        appState.charts['deptTrend'] = new Chart(ctxT.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: tLabels,
+            datasets: [
+              { label: 'Hires', data: tHires, borderColor: '#0D7C3F', backgroundColor: '#0D7C3F', tension: 0.3, borderWidth: 2, pointRadius: 3 },
+              { label: 'Exits', data: tExits, borderColor: '#C41E3A', backgroundColor: '#C41E3A', tension: 0.3, borderWidth: 2, pointRadius: 3 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, datalabels: { display: false } },
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { beginAtZero: true } }
+          }
+        });
+      }
+
+      // Tenure distribution doughnut
+      let ten = deptData ? deptData.tenure || {} : {};
+      let tenLabels = ['< 30D', '30-90D', '90D-1Y', '1-3Y', '> 3Y'];
+      let tenData = [ten.lt30||0, ten.d30_90||0, ten.d90_365||0, ten.d365_1095||0, ten.gt1095||0];
+      let tenColors = ['#C41E3A','#D97706','#2563EB','#7C3AED','#8B95A5'];
+
+      let tenBucketKeys = ['lt30', 'd30_90', 'd90_365', 'd365_1095', 'gt1095'];
+
+      destroyChart('deptTenure');
+      let ctxTen = document.getElementById('deptModalTenure');
+      if (ctxTen) {
+        appState.charts['deptTenure'] = new Chart(ctxTen.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: tenLabels,
+            datasets: [{ data: tenData, backgroundColor: tenColors, borderWidth: 2, borderColor: '#fff' }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            plugins: {
+              legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } },
+              tooltip: { callbacks: { afterLabel: () => 'Click to see reasons' } },
+              datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: v => v > 0 ? v : '' }
+            },
+            onClick: function(evt, elements) {
+              if (elements.length > 0) {
+                let idx = elements[0].index;
+                showDeptTenureReasons(deptData, tenBucketKeys[idx], tenLabels[idx], tenData[idx]);
+              }
+            }
+          }
+        });
+      }
+
+      // Hide reason panel on fresh open
+      document.getElementById('deptTenureReasonPanel').style.display = 'none';
+
+      const modalEl = document.getElementById('problemPosModal');
+      if (window.bootstrap && modalEl) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      }
+    }
+
+    function showDeptTenureReasons(deptData, bucketKey, bucketLabel, exitCount) {
+      let reasons = (deptData && deptData.tenure && deptData.tenure.reasons && deptData.tenure.reasons[bucketKey]) || {};
+      let entries = Object.entries(reasons).map(([r, c]) => ({ reason: r, count: c }));
+      entries.sort((a, b) => b.count - a.count);
+      let total = entries.reduce((s, e) => s + e.count, 0);
+
+      document.getElementById('deptTenureReasonTitle').innerHTML =
+        `Resign Reasons — <b>${escapeHTML(bucketLabel)}</b> (${exitCount} exits)`;
+
+      let html = '';
+      entries.forEach((e, i) => {
+        let pct = total > 0 ? ((e.count / total) * 100).toFixed(1) : '0.0';
+        html += `<tr><td>${i+1}</td><td class="text-start">${escapeHTML(e.reason)}</td><td class="fw-bold">${e.count}</td><td>${pct}%</td></tr>`;
+      });
+      document.getElementById('deptTenureReasonBody').innerHTML =
+        html || '<tr><td colspan="4" class="text-center py-3 text-muted">No reason data for this bucket</td></tr>';
+      document.getElementById('deptTenureReasonPanel').style.display = 'block';
+      document.getElementById('deptTenureReasonPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function openReasonDrill(mode, value) {
+      // mode = 'reason' (specific reason) or 'category' (Resign/Discharge/Other)
+      let { dStart, dEnd, activeFilters } = getCurrentFilters();
+      let storeCounts = {}, deptCounts = {}, timeline = {}, reasonsInCat = {};
+      let total = 0;
+
+      if (appState.rawData.staff) {
+        appState.rawData.staff.forEach(emp => {
+          if (!checkChipMatch(emp.storeNo, emp.dept, emp, activeFilters)) return;
+          let tDate = parsePastDate(emp.termDate);
+          if (!tDate || tDate < dStart || tDate > dEnd) return;
+          let reason = (emp.resignReason || '').trim();
+          if (activeFilters.excludeConversion && isConversion(reason)) return;
+
+          let match = false;
+          if (mode === 'reason') match = (reason === value);
+          else if (mode === 'category') match = (categorizeExitReason(reason) === value);
+          if (!match) return;
+
+          total++;
+          let sKey = cleanStr(emp.storeNo);
+          let sName = (appState.storeMetaMap[sKey] && appState.storeMetaMap[sKey].name) || sKey;
+          let dept = cleanStr(emp.dept) || 'Unknown';
+
+          if (!storeCounts[sKey]) storeCounts[sKey] = { name: sName, count: 0 };
+          storeCounts[sKey].count++;
+
+          deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+
+          let mKey = tDate.getFullYear() + "-" + ("0" + (tDate.getMonth() + 1)).slice(-2);
+          timeline[mKey] = (timeline[mKey] || 0) + 1;
+
+          if (mode === 'category' && reason) {
+            reasonsInCat[reason] = (reasonsInCat[reason] || 0) + 1;
+          }
+        });
+      }
+
+      let totalAll = appState.execReasonTotal || 1;
+      let title = mode === 'reason' ? value : `Category: ${value}`;
+      document.getElementById('reasonDrillTitle').innerHTML =
+        `<i class="bi bi-clipboard-data me-2" style="color:#F0B040;"></i>${escapeHTML(title)}`;
+      document.getElementById('rdExits').innerText = total.toLocaleString();
+      document.getElementById('rdPct').innerText = ((total / totalAll) * 100).toFixed(1) + '%';
+      document.getElementById('rdStores').innerText = Object.keys(storeCounts).length;
+      document.getElementById('rdDepts').innerText = Object.keys(deptCounts).length;
+
+      // Trend chart
+      let tKeys = Object.keys(timeline).sort();
+      let mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      destroyChart('rdTrend');
+      let ctxT = document.getElementById('rdChartTrend');
+      if (ctxT) {
+        appState.charts['rdTrend'] = new Chart(ctxT.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: tKeys.map(k => { let p=k.split('-'); return mNames[parseInt(p[1],10)-1]+' '+p[0].substring(2); }),
+            datasets: [{ label: 'Exits', data: tKeys.map(k => timeline[k]), borderColor: '#C41E3A', backgroundColor: 'rgba(196,30,58,0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, datalabels: { display: false } },
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { beginAtZero: true } }
+          }
+        });
+      }
+
+      // Store table
+      let storeArr = Object.entries(storeCounts).map(([k, v]) => ({ no: k, ...v })).sort((a,b) => b.count - a.count);
+      let sHtml = '';
+      storeArr.forEach((s, i) => {
+        let pct = total > 0 ? ((s.count / total) * 100).toFixed(1) : '0.0';
+        sHtml += `<tr class="clickable-row" onclick="openStoreModal('${escapeStr(s.no)}')">
+          <td>${i+1}</td><td>${escapeHTML(s.no)}</td><td class="text-start">${escapeHTML(s.name)}</td>
+          <td class="fw-bold">${s.count}</td><td>${pct}%</td></tr>`;
+      });
+      document.getElementById('rdStoreBody').innerHTML = sHtml || '<tr><td colspan="5" class="text-center py-3 text-muted">No data</td></tr>';
+
+      // Dept table
+      let deptArr = Object.entries(deptCounts).sort((a,b) => b[1]-a[1]);
+      let dHtml = '';
+      deptArr.forEach(([d, c], i) => {
+        let pct = total > 0 ? ((c / total) * 100).toFixed(1) : '0.0';
+        dHtml += `<tr><td>${i+1}</td><td class="text-start">${escapeHTML(d)}</td><td class="fw-bold">${c}</td><td>${pct}%</td></tr>`;
+      });
+      document.getElementById('rdDeptBody').innerHTML = dHtml || '<tr><td colspan="4" class="text-center py-3 text-muted">No data</td></tr>';
+
+      // Reasons in category (only for category drill)
+      let rPanel = document.getElementById('rdReasonsPanel');
+      if (mode === 'category') {
+        let rArr = Object.entries(reasonsInCat).sort((a,b) => b[1]-a[1]);
+        let rHtml = '';
+        rArr.forEach(([r, c], i) => {
+          let pct = total > 0 ? ((c / total) * 100).toFixed(1) : '0.0';
+          rHtml += `<tr class="clickable-row" style="cursor:pointer;" onclick="bootstrap.Modal.getInstance(document.getElementById('reasonDrillModal')).hide(); setTimeout(()=>openReasonDrill('reason','${escapeStr(r)}'),300);">
+            <td>${i+1}</td><td class="text-start">${escapeHTML(r)} <i class="bi bi-box-arrow-up-right small text-muted"></i></td><td class="fw-bold">${c}</td><td>${pct}%</td></tr>`;
+        });
+        document.getElementById('rdReasonsList').innerHTML = rHtml || '<tr><td colspan="4" class="text-center py-3 text-muted">No reasons</td></tr>';
+        rPanel.style.display = 'block';
+      } else {
+        rPanel.style.display = 'none';
+      }
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('reasonDrillModal')).show();
+    }
+
+    function openStoreTurnoverDrill(storeNo, funcGroup) {
+      let store = appState.data.rawStores[storeNo];
+      if (!store) return;
+      let fg = store.funcGroups && store.funcGroups[funcGroup] ? store.funcGroups[funcGroup] : null;
+      if (!fg) { openStoreModal(storeNo); return; }
+
+      let storeName = store.name || storeNo;
+      let avg = (fg.start + fg.end) / 2;
+      let rate = (avg + fg.exits) > 0 ? (fg.exits / (avg + fg.exits)) * 100 : 0;
+
+      document.getElementById('storeToDrillTitle').innerHTML =
+        `<i class="bi bi-graph-down-arrow me-2" style="color:#F0B040;"></i>${escapeHTML(storeName)} — ${escapeHTML(funcGroup)}`;
+      document.getElementById('toDrillHires').innerText = formatNumber(fg.hires || 0);
+      document.getElementById('toDrillExits').innerText = formatNumber(fg.exits || 0);
+      document.getElementById('toDrillRate').innerText = rate.toFixed(1) + '%';
+      document.getElementById('toDrillAvg').innerText = formatNumber(Math.round(avg));
+
+      // Department breakdown within this func group
+      let positions = fg.positions || {};
+      let deptArr = Object.entries(positions).map(([dept, d]) => {
+        let dAvg = (d.start + d.end) / 2;
+        return {
+          dept, hires: d.hires || 0, exits: d.exits || 0,
+          rate: (dAvg + d.exits) > 0 ? (d.exits / (dAvg + d.exits)) * 100 : 0
+        };
+      }).filter(d => d.hires > 0 || d.exits > 0);
+      deptArr.sort((a, b) => b.exits - a.exits);
+
+      let deptHtml = '';
+      deptArr.forEach((d, i) => {
+        deptHtml += `<tr><td>${i+1}</td><td class="text-start">${escapeHTML(d.dept)}</td>
+          <td>${formatNumber(d.hires)}</td><td class="fw-bold">${formatNumber(d.exits)}</td>
+          <td class="${d.rate>20?'text-danger fw-bold':''}">${d.rate.toFixed(1)}%</td></tr>`;
+      });
+      document.getElementById('toDrillDepts').innerHTML =
+        deptHtml || '<tr><td colspan="5" class="text-center py-3 text-muted">No data</td></tr>';
+
+      // Resign reasons: scan raw staff for this store + funcGroup depts
+      let fgDepts = new Set(Object.keys(positions).map(d => cleanStr(d).toLowerCase()));
+      let { dStart, dEnd, activeFilters } = getCurrentFilters();
+      let reasonCounts = {};
+      if (appState.rawData.staff) {
+        appState.rawData.staff.forEach(emp => {
+          if (cleanStr(emp.storeNo) !== storeNo) return;
+          let d = cleanStr(emp.dept).toLowerCase();
+          if (!fgDepts.has(d)) return;
+          let tDate = parsePastDate(emp.termDate);
+          if (!tDate || tDate < dStart || tDate > dEnd) return;
+          let reason = (emp.resignReason || '').trim();
+          if (activeFilters.excludeConversion && isConversion(reason)) return;
+          if (reason) reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+        });
+      }
+
+      let rEntries = Object.entries(reasonCounts).sort((a,b) => b[1]-a[1]);
+      let rTotal = rEntries.reduce((s,e) => s+e[1], 0);
+      let rHtml = '';
+      rEntries.forEach(([r, c], i) => {
+        let pct = rTotal > 0 ? ((c/rTotal)*100).toFixed(1) : '0.0';
+        rHtml += `<tr><td>${i+1}</td><td class="text-start">${escapeHTML(r)}</td><td class="fw-bold">${c}</td><td>${pct}%</td></tr>`;
+      });
+      document.getElementById('toDrillReasons').innerHTML =
+        rHtml || '<tr><td colspan="4" class="text-center py-3 text-muted">No reason data</td></tr>';
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('storeToDrillModal')).show();
+    }
+
+    function fetchDataWithRetry(retriesLeft) {
+      if(typeof google === 'undefined') {
+        console.warn("Google Script API not found.");
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(payload) {
+          try {
+            initDashboard(payload);
+          } catch(e) {
+            console.error("Init Error:", e);
+            alert("Error: " + e.message);
+            document.getElementById('loadingText').innerText = "Error: " + e.message;
+          }
+        })
+        .withFailureHandler(function(err) {
+          if (retriesLeft > 0) {
+            document.getElementById('loadingText').innerText = `Retrying connection... (${retriesLeft})`;
+            setTimeout(() => fetchDataWithRetry(retriesLeft - 1), 2000);
+          } else {
+            alert("Network Error: Failed to fetch data. Please try refreshing.");
+            hideLoading();
+          }
+        })
+        .getDashboardData();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      let today = new Date();
+      let startDef = new Date(today.getFullYear(), 0, 1);
+
+      if(document.getElementById('dateEnd')) document.getElementById('dateEnd').valueAsDate = today;
+      if(document.getElementById('dateStart')) document.getElementById('dateStart').valueAsDate = startDef;
+
+      if (window.bootstrap && document.getElementById('problemPosModal')) {
+        problemPosModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('problemPosModal'));
+      }
+
+      fetchDataWithRetry(3);
+    });
+  </script>
+</body>
+</html>
