@@ -229,14 +229,28 @@ function updateManpowerActiveCount() {
   const cLevel = stH.indexOf("level");
   const cStatus = stH.indexOf("hr_status");
 
+  // แปลง Level จาก Config_Mapping naming → Manpower_Status naming
+  const normLevelForManpower_ = (level) => {
+    const l = String(level).trim().toLowerCase();
+    if (l === 'staff 1' || l === 'staff 2') return 'Staff';
+    if (l === 'section manager') return 'SM';
+    if (l === 'supervisor') return 'Supv.';
+    if (l === 'sgm' || l === 'asgm') return 'Manager';
+    if (l === 'fresh manager' || l === 'order fulfillment manager') return 'Manager';
+    if (l === 'manager') return 'Manager';
+    // Officer, PC, Student, Temporary ไม่มีแถวใน Manpower_Status — คืนค่าเดิม (จะไม่ match)
+    return String(level).trim();
+  };
+
   // นับจำนวนพนักงานที่เป็น Active
   let activeCounts = {};
   for (let i = 1; i < staffData.length; i++) {
     let status = String(staffData[i][cStatus]).trim().toLowerCase();
     if (status === 'active') {
-      let key = String(staffData[i][cStore]).trim() + "|" + 
-                String(staffData[i][cDept]).trim().toUpperCase() + "|" + 
-                String(staffData[i][cLevel]).trim().toUpperCase();
+      let normLevel = normLevelForManpower_(staffData[i][cLevel]);
+      let key = String(staffData[i][cStore]).trim() + "|" +
+                String(staffData[i][cDept]).trim().toUpperCase() + "|" +
+                normLevel.toUpperCase();
       activeCounts[key] = (activeCounts[key] || 0) + 1;
     }
   }
