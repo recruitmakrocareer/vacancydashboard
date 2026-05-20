@@ -1749,27 +1749,43 @@
     function categorizeDept(deptName) {
       let d = cleanStr(deptName).toLowerCase();
 
-      if (d.includes('picker') || d.includes('loader') || d.includes('packer') || d.includes('admin o2o') || d.includes('o2o')) {
+      // O2O — check first (catches 'Customer Service O2O' before Customer Service defaults to Floor)
+      if (d.includes('o2o') ||
+          d === 'ocs' || d.includes('ofm') ||
+          d === 'order taker' ||
+          d.includes('picker') || d.includes('loader') || d.includes('packer')) {
         return { group: 'O2O', key: deptName };
       }
 
-      if (d.includes('b2b') || d.includes('credit sales')) {
+      // B2B & Commercial
+      if (d.includes('b2b') ||
+          d.includes('credit sales') ||
+          d.includes('admin credit') ||
+          d.includes('tele sales') ||
+          d.includes('canvass')) {
         return { group: 'B2B', key: deptName };
       }
 
+      // Support
       if (
+        d.includes('accounting') ||
         d.includes('goods receiving') ||
+        d.includes('administration') ||
         d.includes('alc') ||
         d.includes('general affair') ||
+        d.includes('gm office') ||
         d.includes('human resources') ||
         d.includes('store center') ||
-        d.includes('customer service') ||
         d.includes('store safety') ||
-        d.includes('administration')
+        d === 'asgm' ||
+        d.includes('office support') ||
+        d.includes('safety specialist') ||
+        d.includes('store system support')
       ) {
         return { group: 'Support', key: deptName };
       }
 
+      // Floor (default — includes Customer Service, Coffee Shop, Food/Fresh Shop variants, Pet Shop, Produce, Elderly, Student, Temporary, สยามโฟรเซ่น)
       return { group: 'Floor', key: deptName };
     }
 
