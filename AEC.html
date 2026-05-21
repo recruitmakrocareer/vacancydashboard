@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AEC / Foreign Worker Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <style>
+    :root {
+      --theme-color: #0EA5E9;
+      --theme-light: #f0f9ff;
+      --theme-dark: #0369A1;
+      --myanmar-color: #DC2626;
+      --lao-color: #2563EB;
+      --card-radius: 12px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    body { font-family: 'Sarabun', sans-serif; background: #f7f8fa; color: #333; }
+    .navbar-custom { background: white; border-bottom: 1px solid #dee2e6; box-shadow: var(--shadow-sm); padding: 0.6rem 1.5rem; }
+    .navbar-brand { font-weight: 800; color: var(--theme-dark); font-size: 1.15rem; }
+    .navbar-brand .badge { font-size: 0.65rem; padding: 0.3rem 0.55rem; background: var(--theme-color); color: white; font-weight: 600; vertical-align: middle; margin-left: 8px; }
+    .nav-back { color: var(--theme-color); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    .nav-back:hover { color: var(--theme-dark); }
+
+    .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .dashboard-title { font-weight: 700; color: #1a1a1a; margin: 0; font-size: 1.5rem; }
+    .dashboard-subtitle { color: #6c757d; font-size: 0.85rem; margin: 0; }
+
+    .filter-section { background: white; padding: 16px 20px; border-radius: var(--card-radius); margin-bottom: 20px; box-shadow: var(--shadow-sm); }
+    .filter-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #858c94; letter-spacing: 0.5px; margin-bottom: 4px; display: block; }
+
+    .kpi-card { background: white; border-radius: var(--card-radius); padding: 18px 20px; box-shadow: var(--shadow-sm); transition: transform 0.15s; border-left: 4px solid var(--theme-color); height: 100%; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .kpi-card.myanmar { border-left-color: var(--myanmar-color); }
+    .kpi-card.lao { border-left-color: var(--lao-color); }
+    .kpi-card.success { border-left-color: #10b981; }
+    .kpi-card.danger { border-left-color: #ef4444; }
+    .kpi-card.warning { border-left-color: #f59e0b; }
+    .kpi-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #858c94; letter-spacing: 0.5px; }
+    .kpi-number { font-size: 2rem; font-weight: 800; color: #1a1a1a; line-height: 1.1; margin-top: 2px; }
+    .kpi-sub { font-size: 0.75rem; color: #6c757d; margin-top: 4px; }
+    .kpi-icon { float: right; font-size: 1.6rem; opacity: 0.25; color: var(--theme-color); }
+
+    .card-custom { background: white; border-radius: var(--card-radius); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+    .card-head { padding: 14px 18px; border-bottom: 1px solid #eef0f3; font-weight: 700; color: #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
+    .card-head .theme-text { color: var(--theme-color); }
+    .card-body-custom { padding: 16px 18px; }
+
+    .table-custom { width: 100%; font-size: 0.85rem; }
+    .table-custom thead th { background: #f8f9fa; padding: 10px; font-weight: 700; color: #495057; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid #dee2e6; }
+    .table-custom tbody td { padding: 8px 10px; border-bottom: 1px solid #eef0f3; vertical-align: middle; }
+    .table-custom tbody tr:hover { background: #f8f9fa; }
+    .badge-myanmar { background: #fee2e2; color: var(--myanmar-color); font-weight: 600; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; }
+    .badge-lao { background: #dbeafe; color: var(--lao-color); font-weight: 600; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; }
+
+    #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    .spinner-border { width: 3rem; height: 3rem; color: var(--theme-color); }
+
+    .btn-toggle-group .btn { font-size: 0.8rem; padding: 4px 12px; }
+    .btn-toggle-group .btn.active { background: var(--theme-color); color: white; border-color: var(--theme-color); }
+
+    @media (max-width: 768px) {
+      .kpi-number { font-size: 1.5rem; }
+      .dashboard-title { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner-border"></div>
+  <p class="mt-3 text-secondary fw-bold">กำลังโหลดข้อมูล...</p>
+</div>
+
+<nav class="navbar-custom d-flex justify-content-between align-items-center">
+  <a class="navbar-brand" href="#"><i class="bi bi-globe2"></i> AEC Dashboard <span class="badge">พม่า + ลาว</span></a>
+  <a class="nav-back" href="javascript:void(0)" onclick="goMainDashboard()"><i class="bi bi-arrow-left"></i> Main Dashboard</a>
+</nav>
+
+<div class="container-fluid p-3 p-md-4">
+
+  <div class="dashboard-header">
+    <div>
+      <h1 class="dashboard-title">AEC / Foreign Worker Analytics</h1>
+      <p class="dashboard-subtitle">วิเคราะห์พนักงานสัญชาติพม่าและลาวในเครือข่ายสาขา</p>
+    </div>
+    <button class="btn btn-sm btn-light border" onclick="resetFilters()"><i class="bi bi-arrow-counterclockwise"></i> Reset Filters</button>
+  </div>
+
+  <div class="filter-section">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="filter-label"><i class="bi bi-calendar-range"></i> Date Range (Snapshot As Of)</label>
+        <input type="date" id="dateEnd" class="form-control form-control-sm" onchange="triggerFilter()">
+      </div>
+      <div class="col-md-3">
+        <label class="filter-label"><i class="bi bi-flag-fill"></i> สัญชาติ</label>
+        <div class="btn-group btn-group-sm btn-toggle-group w-100" role="group">
+          <button type="button" class="btn btn-outline-secondary active" data-nat="all" onclick="setNationality('all', this)">ทั้งหมด</button>
+          <button type="button" class="btn btn-outline-secondary" data-nat="myanmar" onclick="setNationality('myanmar', this)">พม่า</button>
+          <button type="button" class="btn btn-outline-secondary" data-nat="lao" onclick="setNationality('lao', this)">ลาว</button>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="filter-label"><i class="bi bi-shop"></i> Store Format</label>
+        <select id="selFormat" class="form-select form-select-sm" onchange="triggerFilter()">
+          <option value="all">All Formats</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="filter-label"><i class="bi bi-diagram-3"></i> Department</label>
+        <select id="selDept" class="form-select form-select-sm" onchange="triggerFilter()">
+          <option value="all">All Departments</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3 col-lg-2">
+      <div class="kpi-card">
+        <i class="bi bi-people-fill kpi-icon"></i>
+        <div class="kpi-title">Total AEC</div>
+        <div class="kpi-number" id="kpiTotal">0</div>
+        <div class="kpi-sub" id="kpiTotalPct">- % of workforce</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <div class="kpi-card myanmar">
+        <i class="bi bi-person-fill kpi-icon" style="color: var(--myanmar-color);"></i>
+        <div class="kpi-title">พม่า (Myanmar)</div>
+        <div class="kpi-number" id="kpiMyanmar">0</div>
+        <div class="kpi-sub" id="kpiMyanmarPct">- % ของ AEC</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <div class="kpi-card lao">
+        <i class="bi bi-person-fill kpi-icon" style="color: var(--lao-color);"></i>
+        <div class="kpi-title">ลาว (Lao)</div>
+        <div class="kpi-number" id="kpiLao">0</div>
+        <div class="kpi-sub" id="kpiLaoPct">- % ของ AEC</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <div class="kpi-card success">
+        <i class="bi bi-person-plus-fill kpi-icon" style="color: #10b981;"></i>
+        <div class="kpi-title">Hires (YTD)</div>
+        <div class="kpi-number" id="kpiHires">0</div>
+        <div class="kpi-sub">เข้างานในปีปัจจุบัน</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <div class="kpi-card danger">
+        <i class="bi bi-person-dash-fill kpi-icon" style="color: #ef4444;"></i>
+        <div class="kpi-title">Resigns (YTD)</div>
+        <div class="kpi-number" id="kpiResigns">0</div>
+        <div class="kpi-sub">ลาออกในปีปัจจุบัน</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <div class="kpi-card warning">
+        <i class="bi bi-shop-window kpi-icon" style="color: #f59e0b;"></i>
+        <div class="kpi-title">Stores with AEC</div>
+        <div class="kpi-number" id="kpiStores">0</div>
+        <div class="kpi-sub">สาขาที่มีพนักงาน AEC</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card-custom">
+        <div class="card-head"><span><i class="bi bi-pie-chart-fill theme-text me-2"></i>สัดส่วนสัญชาติ</span></div>
+        <div class="card-body-custom">
+          <div style="height: 280px;"><canvas id="chartNat"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card-custom">
+        <div class="card-head"><span><i class="bi bi-bar-chart-fill theme-text me-2"></i>Top 10 สาขาที่มีพนักงาน AEC มากที่สุด</span></div>
+        <div class="card-body-custom">
+          <div style="height: 280px;"><canvas id="chartTopStore"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card-custom">
+        <div class="card-head"><span><i class="bi bi-diagram-3-fill theme-text me-2"></i>AEC แยกตามแผนก</span></div>
+        <div class="card-body-custom">
+          <div style="height: 300px;"><canvas id="chartDept"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card-custom">
+        <div class="card-head"><span><i class="bi bi-layers-fill theme-text me-2"></i>AEC แยกตาม Level</span></div>
+        <div class="card-body-custom">
+          <div style="height: 300px;"><canvas id="chartLevel"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-custom">
+    <div class="card-head">
+      <span><i class="bi bi-table theme-text me-2"></i>รายละเอียดรายสาขา</span>
+      <input type="text" id="storeSearch" class="form-control form-control-sm" style="width: 220px;" placeholder="🔍 ค้นหาสาขา..." oninput="renderStoreTable()">
+    </div>
+    <div class="card-body-custom" style="max-height: 500px; overflow-y: auto;">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>Store No</th>
+            <th>Store Name</th>
+            <th>Format</th>
+            <th>Subregion</th>
+            <th class="text-end">Myanmar</th>
+            <th class="text-end">Lao</th>
+            <th class="text-end">Total AEC</th>
+          </tr>
+        </thead>
+        <tbody id="storeTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const MOCK_RESPONSE = { targets: [], applicants: [], staff: [], parttime: [] };
+  if (typeof google === 'undefined') {
+    window.google = { script: { run: { withSuccessHandler: function(cb){ return { withFailureHandler: function(){ return { getDashboardData: function(){ setTimeout(() => cb(MOCK_RESPONSE), 500); }, getWebAppUrl: function(){ setTimeout(() => cb(''), 100); } }; } }; } } } };
+  }
+  Chart.register(ChartDataLabels);
+  Chart.defaults.font.family = "'Sarabun', sans-serif";
+  Chart.defaults.color = "#858c94";
+
+  const appState = {
+    rawStaff: [],
+    storeMetaMap: {},
+    nationalityFilter: 'all',
+    charts: {},
+    computed: null,
+    webAppUrl: ''
+  };
+
+  function cleanStr(s) { return String(s || '').trim(); }
+  function parsePastDate(str) {
+    if (!str) return null;
+    if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
+    let s = String(str).trim(); if (!s) return null;
+    if (s.includes('/')) {
+      let p = s.split(' ')[0].split('/');
+      if (p.length === 3) {
+        let d = parseInt(p[0],10), m = parseInt(p[1],10), y = parseInt(p[2],10);
+        if (y < 100) y += 2000;
+        let dt = new Date(y, m-1, d); return isNaN(dt.getTime()) ? null : dt;
+      }
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) { let dt = new Date(s); return isNaN(dt.getTime()) ? null : dt; }
+    return null;
+  }
+  function formatNum(n) { return (n || 0).toLocaleString(); }
+
+  // นับเฉพาะ Myanmar (พม่า) + Lao เท่านั้น
+  function getAECCategory(nat) {
+    let n = cleanStr(nat).toLowerCase();
+    if (n === 'lao') return 'Lao';
+    if (n === 'พม่า' || n === 'myanmar' || n.includes('myanmar') || n.includes('burma')) return 'Myanmar';
+    return null;
+  }
+
+  $(document).ready(function(){
+    let today = new Date();
+    document.getElementById('dateEnd').valueAsDate = today;
+    google.script.run.withSuccessHandler(function(url){ appState.webAppUrl = url || ''; }).getWebAppUrl();
+    google.script.run
+      .withSuccessHandler(initDashboard)
+      .withFailureHandler(function(err){ alert('❌ โหลดข้อมูลล้มเหลว: ' + err.message); $('#loading').fadeOut(300); })
+      .getDashboardData();
+  });
+
+  function initDashboard(payload) {
+    let res = (typeof payload === 'string') ? JSON.parse(payload) : payload;
+    if (res.error) { alert('Error: ' + res.message); $('#loading').fadeOut(300); return; }
+
+    // Build store meta map
+    res.targets.forEach(t => {
+      let k = cleanStr(t.storeNo);
+      if (!appState.storeMetaMap[k]) {
+        appState.storeMetaMap[k] = {
+          name: t.storeName || '',
+          format: cleanStr(t.format),
+          subregion: cleanStr(t.subregion || t.area || ''),
+          od: cleanStr(t.od),
+          regionalCEO: cleanStr(t.regionalCEO || '')
+        };
+      }
+    });
+
+    // เก็บเฉพาะ AEC (Myanmar + Lao)
+    appState.rawStaff = res.staff.filter(s => getAECCategory(s.nationality) !== null);
+
+    // Total active workforce (for % calc)
+    appState.totalActive = res.staff.length;
+
+    // Populate filter dropdowns
+    populateFilters();
+    $('#loading').fadeOut(300);
+    triggerFilter();
+  }
+
+  function populateFilters() {
+    let formats = new Set(); let depts = new Set();
+    appState.rawStaff.forEach(s => {
+      let meta = appState.storeMetaMap[cleanStr(s.storeNo)];
+      if (meta && meta.format) formats.add(meta.format);
+      if (s.dept) depts.add(cleanStr(s.dept));
+    });
+    let fmtSel = document.getElementById('selFormat');
+    [...formats].sort().forEach(f => { let o = document.createElement('option'); o.value = f; o.textContent = f; fmtSel.appendChild(o); });
+    let dSel = document.getElementById('selDept');
+    [...depts].sort().forEach(d => { let o = document.createElement('option'); o.value = d; o.textContent = d; dSel.appendChild(o); });
+  }
+
+  function setNationality(val, btn) {
+    appState.nationalityFilter = val;
+    $('.btn-toggle-group .btn').removeClass('active');
+    $(btn).addClass('active');
+    triggerFilter();
+  }
+
+  function resetFilters() {
+    document.getElementById('dateEnd').valueAsDate = new Date();
+    document.getElementById('selFormat').value = 'all';
+    document.getElementById('selDept').value = 'all';
+    document.getElementById('storeSearch').value = '';
+    setNationality('all', document.querySelector('[data-nat="all"]'));
+  }
+
+  function triggerFilter() {
+    compute();
+    renderAll();
+  }
+
+  function compute() {
+    let dEndVal = document.getElementById('dateEnd').value;
+    let dEnd = dEndVal ? new Date(dEndVal) : new Date();
+    dEnd.setHours(23,59,59,999);
+    let ytdStart = new Date(dEnd.getFullYear(), 0, 1); ytdStart.setHours(0,0,0,0);
+
+    let selFmt = document.getElementById('selFormat').value;
+    let selDept = document.getElementById('selDept').value;
+    let natFilter = appState.nationalityFilter;
+
+    let myanmarActive = 0, laoActive = 0;
+    let hires = 0, resigns = 0;
+    let byStore = {}; // storeNo -> { myanmar, lao, name, format, subregion }
+    let byDept = {};  // dept -> { myanmar, lao }
+    let byLevel = {}; // level -> { myanmar, lao }
+    let seenEmp = new Set();
+
+    appState.rawStaff.forEach(s => {
+      let cat = getAECCategory(s.nationality);
+      if (!cat) return;
+      if (natFilter === 'myanmar' && cat !== 'Myanmar') return;
+      if (natFilter === 'lao' && cat !== 'Lao') return;
+
+      let storeNo = cleanStr(s.storeNo);
+      let meta = appState.storeMetaMap[storeNo] || { name: '-', format: '-', subregion: '-' };
+      if (selFmt !== 'all' && meta.format !== selFmt) return;
+
+      let dept = cleanStr(s.dept);
+      if (selDept !== 'all' && dept !== selDept) return;
+
+      let jd = parsePastDate(s.joinDate);
+      let td = parsePastDate(s.termDate);
+      let isStatusActive = false;
+      if (s.status) {
+        let st = String(s.status).toLowerCase().trim();
+        if (st === 'active' || (st.includes('active') && !st.includes('inactive'))) isStatusActive = true;
+      }
+      let isStartedCurr = jd ? (jd <= dEnd) : isStatusActive;
+      let isNotTerminatedCurr = !td || td > dEnd;
+      let isActive = isStartedCurr && isNotTerminatedCurr;
+
+      let empId = cleanStr(s.empId);
+      if (isActive) {
+        if (!empId || !seenEmp.has(empId)) {
+          if (cat === 'Myanmar') myanmarActive++;
+          if (cat === 'Lao') laoActive++;
+          if (empId) seenEmp.add(empId);
+
+          if (!byStore[storeNo]) byStore[storeNo] = { myanmar: 0, lao: 0, name: meta.name, format: meta.format, subregion: meta.subregion };
+          if (cat === 'Myanmar') byStore[storeNo].myanmar++;
+          else byStore[storeNo].lao++;
+
+          if (!byDept[dept]) byDept[dept] = { myanmar: 0, lao: 0 };
+          if (cat === 'Myanmar') byDept[dept].myanmar++;
+          else byDept[dept].lao++;
+
+          let lvl = cleanStr(s.level) || '(unspecified)';
+          if (!byLevel[lvl]) byLevel[lvl] = { myanmar: 0, lao: 0 };
+          if (cat === 'Myanmar') byLevel[lvl].myanmar++;
+          else byLevel[lvl].lao++;
+        }
+      }
+
+      // Hires & Resigns YTD (เฉพาะที่ผ่าน filter แล้ว)
+      if (jd && jd >= ytdStart && jd <= dEnd) hires++;
+      if (td && td >= ytdStart && td <= dEnd) resigns++;
+    });
+
+    appState.computed = {
+      myanmarActive, laoActive,
+      totalAEC: myanmarActive + laoActive,
+      hires, resigns,
+      byStore, byDept, byLevel,
+      totalActive: appState.totalActive
+    };
+  }
+
+  function renderAll() {
+    let c = appState.computed;
+    let total = c.totalAEC;
+    $('#kpiTotal').text(formatNum(total));
+    $('#kpiMyanmar').text(formatNum(c.myanmarActive));
+    $('#kpiLao').text(formatNum(c.laoActive));
+    $('#kpiHires').text(formatNum(c.hires));
+    $('#kpiResigns').text(formatNum(c.resigns));
+    $('#kpiStores').text(formatNum(Object.keys(c.byStore).length));
+
+    let pct = c.totalActive > 0 ? ((total / c.totalActive) * 100).toFixed(2) : '0';
+    $('#kpiTotalPct').text(pct + '% ของพนักงานทั้งหมด');
+    let mPct = total > 0 ? ((c.myanmarActive / total) * 100).toFixed(1) : '0';
+    let lPct = total > 0 ? ((c.laoActive / total) * 100).toFixed(1) : '0';
+    $('#kpiMyanmarPct').text(mPct + '% ของ AEC');
+    $('#kpiLaoPct').text(lPct + '% ของ AEC');
+
+    renderNatChart();
+    renderTopStoreChart();
+    renderDeptChart();
+    renderLevelChart();
+    renderStoreTable();
+  }
+
+  function destroyChart(name) {
+    if (appState.charts[name]) { appState.charts[name].destroy(); delete appState.charts[name]; }
+  }
+
+  function renderNatChart() {
+    destroyChart('nat');
+    let c = appState.computed;
+    let ctx = document.getElementById('chartNat').getContext('2d');
+    appState.charts.nat = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['พม่า (Myanmar)', 'ลาว (Lao)'],
+        datasets: [{
+          data: [c.myanmarActive, c.laoActive],
+          backgroundColor: ['#DC2626', '#2563EB'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12, weight: 600 } } },
+          datalabels: {
+            color: '#fff',
+            font: { weight: 700, size: 14 },
+            formatter: (v, ctx) => {
+              let total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+              if (total === 0 || v === 0) return '';
+              return v + '\n(' + ((v/total)*100).toFixed(0) + '%)';
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderTopStoreChart() {
+    destroyChart('topStore');
+    let c = appState.computed;
+    let arr = Object.entries(c.byStore).map(([k,v]) => ({
+      store: k, label: k + ' ' + (v.name || ''), m: v.myanmar, l: v.lao, total: v.myanmar + v.lao
+    }));
+    arr.sort((a,b) => b.total - a.total);
+    arr = arr.slice(0, 10);
+    let ctx = document.getElementById('chartTopStore').getContext('2d');
+    appState.charts.topStore = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: arr.map(x => x.label.length > 25 ? x.label.substring(0,25) + '…' : x.label),
+        datasets: [
+          { label: 'พม่า', data: arr.map(x => x.m), backgroundColor: '#DC2626' },
+          { label: 'ลาว', data: arr.map(x => x.l), backgroundColor: '#2563EB' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: {
+          legend: { position: 'top' },
+          datalabels: { color: '#fff', font: { size: 11, weight: 700 }, formatter: v => v > 0 ? v : '' }
+        },
+        scales: {
+          x: { stacked: true, beginAtZero: true },
+          y: { stacked: true, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  function renderDeptChart() {
+    destroyChart('dept');
+    let c = appState.computed;
+    let arr = Object.entries(c.byDept).map(([k,v]) => ({ d: k, m: v.myanmar, l: v.lao, t: v.myanmar + v.lao }));
+    arr.sort((a,b) => b.t - a.t);
+    arr = arr.slice(0, 12);
+    let ctx = document.getElementById('chartDept').getContext('2d');
+    appState.charts.dept = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: arr.map(x => x.d || '(unspecified)'),
+        datasets: [
+          { label: 'พม่า', data: arr.map(x => x.m), backgroundColor: '#DC2626' },
+          { label: 'ลาว', data: arr.map(x => x.l), backgroundColor: '#2563EB' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          datalabels: { color: '#fff', font: { size: 10, weight: 700 }, formatter: v => v > 0 ? v : '' }
+        },
+        scales: {
+          x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 } },
+          y: { stacked: true, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  function renderLevelChart() {
+    destroyChart('level');
+    let c = appState.computed;
+    let order = ['Temporary','Student','Staff 1','Staff 2','Staff','Officer','Supervisor','Supv.','Section Manager','SM','Manager','ASGM','SGM','(unspecified)'];
+    let arr = Object.entries(c.byLevel).map(([k,v]) => ({ d: k, m: v.myanmar, l: v.lao, t: v.myanmar + v.lao }));
+    arr.sort((a,b) => {
+      let ia = order.indexOf(a.d); let ib = order.indexOf(b.d);
+      if (ia === -1) ia = 999; if (ib === -1) ib = 999;
+      return ia - ib;
+    });
+    let ctx = document.getElementById('chartLevel').getContext('2d');
+    appState.charts.level = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: arr.map(x => x.d),
+        datasets: [
+          { label: 'พม่า', data: arr.map(x => x.m), backgroundColor: '#DC2626' },
+          { label: 'ลาว', data: arr.map(x => x.l), backgroundColor: '#2563EB' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          datalabels: { color: '#fff', font: { size: 11, weight: 700 }, formatter: v => v > 0 ? v : '' }
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  function renderStoreTable() {
+    let c = appState.computed;
+    let search = document.getElementById('storeSearch').value.toLowerCase().trim();
+    let arr = Object.entries(c.byStore).map(([k,v]) => ({
+      store: k, name: v.name, format: v.format, subregion: v.subregion,
+      m: v.myanmar, l: v.lao, total: v.myanmar + v.lao
+    }));
+    if (search) {
+      arr = arr.filter(x =>
+        x.store.toLowerCase().includes(search) ||
+        (x.name || '').toLowerCase().includes(search)
+      );
+    }
+    arr.sort((a,b) => b.total - a.total);
+    let html = '';
+    arr.forEach(x => {
+      html += `<tr>
+        <td><strong>${x.store}</strong></td>
+        <td>${x.name || '-'}</td>
+        <td>${x.format || '-'}</td>
+        <td>${x.subregion || '-'}</td>
+        <td class="text-end">${x.m > 0 ? '<span class="badge-myanmar">' + x.m + '</span>' : '-'}</td>
+        <td class="text-end">${x.l > 0 ? '<span class="badge-lao">' + x.l + '</span>' : '-'}</td>
+        <td class="text-end fw-bold">${x.total}</td>
+      </tr>`;
+    });
+    if (!html) html = '<tr><td colspan="7" class="text-center text-muted py-4">ไม่พบข้อมูล</td></tr>';
+    document.getElementById('storeTableBody').innerHTML = html;
+  }
+
+  function goMainDashboard() {
+    if (appState.webAppUrl) {
+      window.top.location.href = appState.webAppUrl;
+    } else {
+      window.top.location.href = window.top.location.href.split('?')[0];
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -19,6 +19,13 @@ function doGet(e) {
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
+  if (e && e.parameter && e.parameter.page === 'aec') {
+    return HtmlService.createTemplateFromFile('AEC')
+      .evaluate()
+      .setTitle('AEC / Foreign Worker Dashboard')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
   return HtmlService.createTemplateFromFile('index')
       .evaluate()
       .setTitle('HR Analytics Dashboard')
