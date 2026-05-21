@@ -125,7 +125,7 @@ function importStaffMovement2() {
   const HEADERS = [
     "Emp_ID", "Store_No", "Name", "Company", "Position",
     "Emp_Category", "Job_Family", "Level", "Department",
-    "Join_Date", "Terminate_Date", "HR_Status", "Resign_Reason"
+    "Join_Date", "Terminate_Date", "HR_Status", "Resign_Reason", "Nationality"
   ];
 
   if (!destSheet) destSheet = ss.insertSheet(destSheetName);
@@ -142,9 +142,9 @@ function importStaffMovement2() {
   let h = data[0].map(x => String(x).toLowerCase().trim());
   let col = {
     empID: -1, name: -1, status: -1, joinDate: -1, pos: -1, store: -1, comp: -1, terminate: -1,
-    reason: 26 
+    reason: 26, nationality: -1
   };
-  
+
   for(let i=0; i<h.length; i++) {
     if(h[i].includes("empl id") || h[i].includes("รหัสพนักงาน") || h[i].includes("emp_id")) col.empID = i;
     else if(h[i].includes("display name") || h[i].includes("ชื่อ")) col.name = i;
@@ -154,7 +154,8 @@ function importStaffMovement2() {
     else if(h[i].includes("st no") || h[i].includes("รหัสสาขา")) col.store = i;
     else if(h[i].includes("company") || h[i].includes("บริษัท")) col.comp = i;
     else if(h[i].includes("termination") || h[i].includes("วันลาออก")) col.terminate = i;
-    
+    else if(h[i].includes("ethnic descr") || h[i] === "ethnic description") col.nationality = i;
+
     if (i > 0 && h[i-1].includes("reason code") && h[i].includes("descr")) {
       col.reason = i;
     }
@@ -196,7 +197,8 @@ function importStaffMovement2() {
         parseDate(row[col.joinDate]),
         parseDate(row[col.terminate]),
         row[col.status],
-        reasonText
+        reasonText,
+        col.nationality >= 0 ? String(row[col.nationality] || '').trim() : ''
       ]);
     }
   }

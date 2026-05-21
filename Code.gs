@@ -49,7 +49,7 @@ function createHeaderMap(headers) {
  */
 function getDashboardData(forceRefresh = false) {
   const cache = CacheService.getScriptCache();
-  const cacheKey = 'HR_DASHBOARD_DATA_V3'; // 🌟 เปลี่ยน key เพื่อ invalidate cache เก่า
+  const cacheKey = 'HR_DASHBOARD_DATA_V4'; // v4: เพิ่ม nationality field ใน staff
 
   if (!forceRefresh) {
     const cachedData = cache.get(cacheKey);
@@ -165,7 +165,8 @@ function getDashboardData(forceRefresh = false) {
              joinDate: r[map['joindate']] || '',
              termDate: r[map['terminatedate']] || r[map['termdate']] || '',
              status: r[map['status']] || r[map['employeestatus']] || r[map['hrstatus']] || '',
-             resignReason: r[map['resignreason']] || r[map['resign_reason']] || ''
+             resignReason: r[map['resignreason']] || r[map['resign_reason']] || '',
+             nationality: r[map['nationality']] || ''
            });
         });
       }
@@ -225,5 +226,6 @@ function getDashboardData(forceRefresh = false) {
 function clearDashboardCache() {
   const cache = CacheService.getScriptCache();
   cache.remove('HR_DASHBOARD_DATA_V3');
+  cache.remove('HR_DASHBOARD_DATA_V4');
   return "Cache cleared. Next call will reload from spreadsheet.";
 }

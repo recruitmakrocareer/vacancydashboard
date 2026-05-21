@@ -362,6 +362,14 @@
                                         <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="ASGM" id="lvl8" checked onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl8">ASGM</label></div>
                                         <div class="form-check form-check-inline custom-chk m-0"><input class="form-check-input chk-Level" type="checkbox" value="SGM" id="lvl9" checked onchange="checkLevelState('Level')"><label class="form-check-label" for="lvl9">SGM</label></div>
                                     </div>
+                                    <div class="border-start ps-3 ms-auto d-flex align-items-center gap-2 flex-shrink-0">
+                                        <span class="filter-label m-0"><i class="bi bi-globe2 theme-text"></i> สัญชาติ:</span>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-secondary active" id="natAll" onclick="setNationalityFilter('all', this)">All</button>
+                                            <button type="button" class="btn btn-outline-secondary" id="natThai" onclick="setNationalityFilter('thai', this)">Thai</button>
+                                            <button type="button" class="btn btn-outline-secondary" id="natAEC" onclick="setNationalityFilter('aec', this)">AEC / ต่างชาติ</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -715,7 +723,7 @@
 
     const appState = {
         isLoading: true, activePage: 'operations', rawData: { targets: [], applicants: [], staff: [], parttime: [] },
-        storeMetaMap: {}, baseTargetKeys: new Set(),
+        storeMetaMap: {}, baseTargetKeys: new Set(), nationalityFilter: 'all',
         processedOps: { stores: {}, depts: {}, funnel: {}, sources: {}, metrics: {}, parttimeDaily: {}, ptStore: {}, ptDept: {}, dailyMovement: {}, exportFunnel: {} },
         processedExec: { breakdown: {}, dailyData: {}, metrics: {}, depts: {} },
         fillRateView: 'rate', modalState: { type: null, key: null, subKey: null }, modalTableData: [], modalSortState: { col: 'gap', asc: true }, charts: {}
@@ -754,8 +762,9 @@
             subregion: getSelectedValues(isExec ? 'ExecArea' : 'Area'),
             store: getSelectedValues(isExec ? 'ExecStore' : 'Store'), 
             dept: getSelectedValues(isExec ? 'ExecDept' : 'Dept'), 
-            isFocus: scopeValue, 
-            levels: selectedLevels 
+            isFocus: scopeValue,
+            levels: selectedLevels,
+            nationalityFilter: appState.nationalityFilter || 'all'
         };
         return { dStart, dEnd, activeFilters };
     }
@@ -778,6 +787,14 @@
         if(document.getElementById('dateStart')) document.getElementById('dateStart').valueAsDate = startDef;
         $('#selStoreScope').val('all'); handleScopeChange(false, true);
         const defaultChecks = ["Temporary", "Staff", "Officer", "Supv.", "SM", "Manager", "ASGM", "SGM"]; $('.chk-Level').prop('checked', false); defaultChecks.forEach(l => { $(`.chk-Level[value="${cleanStr(l)}"]`).prop('checked', true); }); checkLevelState('Level');
+        setNationalityFilter('all', document.getElementById('natAll'));
+    }
+
+    function setNationalityFilter(val, btn) {
+        appState.nationalityFilter = val;
+        $('#natAll, #natThai, #natAEC').removeClass('active');
+        if (btn) $(btn).addClass('active');
+        triggerFilters(false);
     }
 
     function resetExecFilters() {
@@ -934,6 +951,11 @@
         if (filters.subregion.length > 0 && !filters.subregion.includes(subregion)) return false;
         if (filters.store.length > 0 && !filters.store.includes(key)) return false;
         if (filters.dept.length > 0 && !filters.dept.includes(cleanStr(dept))) return false;
+        if (filters.nationalityFilter && filters.nationalityFilter !== 'all' && recordMeta && 'nationality' in recordMeta) {
+            let nat = cleanStr(recordMeta.nationality || '').toLowerCase();
+            if (filters.nationalityFilter === 'thai' && nat !== 'thai') return false;
+            if (filters.nationalityFilter === 'aec' && (nat === 'thai' || nat === '')) return false;
+        }
         return true;
     }
 
