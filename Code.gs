@@ -56,7 +56,7 @@ function createHeaderMap(headers) {
  */
 function getDashboardData(forceRefresh = false) {
   const cache = CacheService.getScriptCache();
-  const cacheKey = 'HR_DASHBOARD_DATA_V4'; // v4: เพิ่ม nationality field ใน staff
+  const cacheKey = 'HR_DASHBOARD_DATA_V5'; // v5: เพิ่ม empCategory field ใน staff
 
   if (!forceRefresh) {
     const cachedData = cache.get(cacheKey);
@@ -173,7 +173,8 @@ function getDashboardData(forceRefresh = false) {
              termDate: r[map['terminatedate']] || r[map['termdate']] || '',
              status: r[map['status']] || r[map['employeestatus']] || r[map['hrstatus']] || '',
              resignReason: r[map['resignreason']] || r[map['resign_reason']] || '',
-             nationality: r[map['nationality']] || ''
+             nationality: r[map['nationality']] || '',
+             empCategory: r[map['empcategory']] || ''
            });
         });
       }
@@ -232,7 +233,6 @@ function getDashboardData(forceRefresh = false) {
  */
 function clearDashboardCache() {
   const cache = CacheService.getScriptCache();
-  cache.remove('HR_DASHBOARD_DATA_V3');
-  cache.remove('HR_DASHBOARD_DATA_V4');
+  ['HR_DASHBOARD_DATA_V3','HR_DASHBOARD_DATA_V4','HR_DASHBOARD_DATA_V5'].forEach(k => cache.remove(k));
   return "Cache cleared. Next call will reload from spreadsheet.";
 }

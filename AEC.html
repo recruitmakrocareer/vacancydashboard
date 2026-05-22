@@ -4,11 +4,11 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AEC / Foreign Worker Dashboard</title>
+  <title>AEC Workforce Dashboard</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -19,619 +19,693 @@
 
   <style>
     :root {
-      --theme-color: #0EA5E9;
-      --theme-light: #f0f9ff;
-      --theme-dark: #0369A1;
-      --myanmar-color: #DC2626;
-      --lao-color: #2563EB;
-      --card-radius: 12px;
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+      --navy:       #0F172A;
+      --navy-800:   #1E293B;
+      --navy-700:   #334155;
+      --indigo:     #4F46E5;
+      --indigo-lt:  #EEF2FF;
+      --myanmar:    #E11D48;
+      --myanmar-lt: #FFF1F2;
+      --lao:        #0284C7;
+      --lao-lt:     #F0F9FF;
+      --thai:       #059669;
+      --thai-lt:    #F0FDF4;
+      --amber:      #D97706;
+      --amber-lt:   #FFFBEB;
+      --surface:    #F8FAFC;
+      --border:     #E2E8F0;
+      --text:       #0F172A;
+      --text-muted: #64748B;
+      --radius-lg:  16px;
+      --radius-md:  10px;
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:  0 4px 12px rgba(0,0,0,.08);
+      --shadow-lg:  0 10px 30px rgba(0,0,0,.1);
     }
-    body { font-family: 'Sarabun', sans-serif; background: #f7f8fa; color: #333; }
-    .navbar-custom { background: white; border-bottom: 1px solid #dee2e6; box-shadow: var(--shadow-sm); padding: 0.6rem 1.5rem; }
-    .navbar-brand { font-weight: 800; color: var(--theme-dark); font-size: 1.15rem; }
-    .navbar-brand .badge { font-size: 0.65rem; padding: 0.3rem 0.55rem; background: var(--theme-color); color: white; font-weight: 600; vertical-align: middle; margin-left: 8px; }
-    .nav-back { color: var(--theme-color); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
-    .nav-back:hover { color: var(--theme-dark); }
 
-    .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-    .dashboard-title { font-weight: 700; color: #1a1a1a; margin: 0; font-size: 1.5rem; }
-    .dashboard-subtitle { color: #6c757d; font-size: 0.85rem; margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Inter', 'Sarabun', sans-serif; background: var(--surface); color: var(--text); -webkit-font-smoothing: antialiased; }
 
-    .filter-section { background: white; padding: 16px 20px; border-radius: var(--card-radius); margin-bottom: 20px; box-shadow: var(--shadow-sm); }
-    .filter-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #858c94; letter-spacing: 0.5px; margin-bottom: 4px; display: block; }
+    /* ── LOADING ─────────────────────────── */
+    #loading { position: fixed; inset: 0; background: #fff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .loader-ring { width: 52px; height: 52px; border: 4px solid var(--indigo-lt); border-top-color: var(--indigo); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .kpi-card { background: white; border-radius: var(--card-radius); padding: 18px 20px; box-shadow: var(--shadow-sm); transition: transform 0.15s; border-left: 4px solid var(--theme-color); height: 100%; }
-    .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-    .kpi-card.myanmar { border-left-color: var(--myanmar-color); }
-    .kpi-card.lao { border-left-color: var(--lao-color); }
-    .kpi-card.success { border-left-color: #10b981; }
-    .kpi-card.danger { border-left-color: #ef4444; }
-    .kpi-card.warning { border-left-color: #f59e0b; }
-    .kpi-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #858c94; letter-spacing: 0.5px; }
-    .kpi-number { font-size: 2rem; font-weight: 800; color: #1a1a1a; line-height: 1.1; margin-top: 2px; }
-    .kpi-sub { font-size: 0.75rem; color: #6c757d; margin-top: 4px; }
-    .kpi-icon { float: right; font-size: 1.6rem; opacity: 0.25; color: var(--theme-color); }
+    /* ── TOPBAR ──────────────────────────── */
+    .topbar { background: var(--navy); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: .95rem; letter-spacing: .3px; text-decoration: none; }
+    .topbar-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--indigo); }
+    .topbar-pill { background: rgba(79,70,229,.25); border: 1px solid rgba(79,70,229,.5); color: #c7d2fe; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: .5px; text-transform: uppercase; }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .topbar-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.85); font-size: .8rem; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .15s; font-weight: 600; }
+    .topbar-btn:hover { background: rgba(255,255,255,.15); }
+    .topbar-btn.primary { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+    .topbar-btn.primary:hover { background: #4338CA; }
+    #lastUpdate { font-size: .72rem; color: rgba(255,255,255,.4); }
 
-    .card-custom { background: white; border-radius: var(--card-radius); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
-    .card-head { padding: 14px 18px; border-bottom: 1px solid #eef0f3; font-weight: 700; color: #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
-    .card-head .theme-text { color: var(--theme-color); }
-    .card-body-custom { padding: 16px 18px; }
+    /* ── FILTER BAR ──────────────────────── */
+    .filter-bar { background: #fff; border-bottom: 1px solid var(--border); padding: 12px 28px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+    .filter-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); }
+    .filter-input { font-size: .82rem; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); background: var(--surface); transition: border-color .15s; font-family: inherit; }
+    .filter-input:focus { outline: none; border-color: var(--indigo); }
+    .seg-btns { display: flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg-btn { font-size: .78rem; font-weight: 600; padding: 6px 14px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: all .15s; font-family: inherit; }
+    .seg-btn.active { background: var(--indigo); color: #fff; }
+    .seg-btn:not(.active):hover { background: var(--indigo-lt); color: var(--indigo); }
+    .filter-reset { margin-left: auto; font-size: .8rem; font-weight: 600; color: var(--text-muted); background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: border-color .15s; }
+    .filter-reset:hover { border-color: var(--indigo); color: var(--indigo); }
 
-    .table-custom { width: 100%; font-size: 0.85rem; }
-    .table-custom thead th { background: #f8f9fa; padding: 10px; font-weight: 700; color: #495057; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid #dee2e6; }
-    .table-custom tbody td { padding: 8px 10px; border-bottom: 1px solid #eef0f3; vertical-align: middle; }
-    .table-custom tbody tr:hover { background: #f8f9fa; }
-    .badge-myanmar { background: #fee2e2; color: var(--myanmar-color); font-weight: 600; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; }
-    .badge-lao { background: #dbeafe; color: var(--lao-color); font-weight: 600; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; }
+    /* ── CONTENT ─────────────────────────── */
+    .content { padding: 24px 28px; }
 
-    #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-    .spinner-border { width: 3rem; height: 3rem; color: var(--theme-color); }
+    /* ── KPI STRIP ───────────────────────── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
+    .kpi-card { background: #fff; border-radius: var(--radius-md); padding: 18px 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--indigo); }
+    .kpi-card.myanmar::before { background: var(--myanmar); }
+    .kpi-card.lao::before { background: var(--lao); }
+    .kpi-card.thai::before { background: var(--thai); }
+    .kpi-card.hires::before { background: var(--thai); }
+    .kpi-card.resigns::before { background: var(--myanmar); }
+    .kpi-card.stores::before { background: var(--amber); }
+    .kpi-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); margin-bottom: 6px; }
+    .kpi-value { font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: -1px; color: var(--text); }
+    .kpi-sub { font-size: .72rem; color: var(--text-muted); margin-top: 5px; }
+    .kpi-badge { display: inline-flex; align-items: center; gap: 3px; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-top: 5px; }
+    .kpi-badge.up { background: #dcfce7; color: #15803d; }
+    .kpi-badge.down { background: #fee2e2; color: #b91c1c; }
 
-    .btn-toggle-group .btn { font-size: 0.8rem; padding: 4px 12px; }
-    .btn-toggle-group .btn.active { background: var(--theme-color); color: white; border-color: var(--theme-color); }
+    /* ── CHART GRID ──────────────────────── */
+    .chart-grid { display: grid; gap: 18px; margin-bottom: 22px; }
+    .chart-grid.two-one { grid-template-columns: 2fr 1fr; }
+    .chart-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    .chart-card { background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+    .chart-head { padding: 16px 20px 0; display: flex; justify-content: space-between; align-items: center; }
+    .chart-title { font-size: .82rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .chart-title .icon { width: 28px; height: 28px; border-radius: 8px; background: var(--indigo-lt); display: flex; align-items: center; justify-content: center; color: var(--indigo); font-size: .85rem; }
+    .chart-subtitle { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
+    .chart-body { padding: 16px 20px 20px; }
 
-    @media (max-width: 768px) {
-      .kpi-number { font-size: 1.5rem; }
-      .dashboard-title { font-size: 1.2rem; }
+    /* ── LEGEND PILLS ────────────────────── */
+    .legend-pills { display: flex; gap: 10px; flex-wrap: wrap; }
+    .lpill { display: flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 600; color: var(--text-muted); }
+    .lpill .dot { width: 8px; height: 8px; border-radius: 2px; }
+
+    /* ── STAT TABLE ──────────────────────── */
+    .stat-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .stat-table thead th { padding: 10px 12px; background: var(--surface); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); border-bottom: 1.5px solid var(--border); text-align: left; }
+    .stat-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .stat-table tbody tr:last-child td { border-bottom: none; }
+    .stat-table tbody tr:hover td { background: var(--surface); }
+    .num-cell { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+    .bar-mini { height: 5px; border-radius: 999px; background: var(--indigo-lt); overflow: hidden; margin-top: 3px; }
+    .bar-mini-fill { height: 100%; border-radius: 999px; background: var(--indigo); transition: width .4s; }
+    .nat-chip { display: inline-flex; align-items: center; gap: 4px; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+    .nat-chip.mm { background: var(--myanmar-lt); color: var(--myanmar); }
+    .nat-chip.la { background: var(--lao-lt); color: var(--lao); }
+    .nat-chip.th { background: var(--thai-lt); color: var(--thai); }
+    .pct-col { font-size: .75rem; font-weight: 700; color: var(--indigo); font-variant-numeric: tabular-nums; }
+    .rank-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--indigo-lt); color: var(--indigo); border-radius: 6px; font-size: .72rem; font-weight: 800; }
+    .rank-num.gold { background: #fef9c3; color: #a16207; }
+
+    /* ── SCROLLABLE TABLE WRAPPER ────────── */
+    .table-wrap { overflow-y: auto; max-height: 380px; }
+    .table-search { font-size: .82rem; border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); width: 220px; font-family: inherit; }
+    .table-search:focus { outline: none; border-color: var(--indigo); }
+
+    /* ── SECTION DIVIDER ─────────────────── */
+    .section-label { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── PRINT ───────────────────────────── */
+    @media print {
+      .topbar, .filter-bar, .topbar-btn, .filter-reset, .table-search, #storeSearch { display: none !important; }
+      body { background: #fff; }
+      .content { padding: 10px 16px; }
+      .kpi-card, .chart-card { box-shadow: none; break-inside: avoid; }
+      .table-wrap { max-height: none; overflow: visible; }
+      .chart-grid.two-one { grid-template-columns: 1fr 1fr; }
     }
+
+    /* ── RESPONSIVE ──────────────────────── */
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 900px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .chart-grid.two-one, .chart-grid.three { grid-template-columns: 1fr; } .filter-bar { padding: 12px 16px; } .content { padding: 16px; } .topbar { padding: 0 16px; } }
+    @media (max-width: 600px)  { .kpi-value { font-size: 1.5rem; } }
   </style>
 </head>
 <body>
 
 <div id="loading">
-  <div class="spinner-border"></div>
-  <p class="mt-3 text-secondary fw-bold">กำลังโหลดข้อมูล...</p>
+  <div class="loader-ring"></div>
+  <p style="margin-top:16px; font-size:.85rem; font-weight:600; color:var(--text-muted);">กำลังโหลดข้อมูล AEC...</p>
 </div>
 
-<nav class="navbar-custom d-flex justify-content-between align-items-center">
-  <a class="navbar-brand" href="#"><i class="bi bi-globe2"></i> AEC Dashboard <span class="badge">พม่า + ลาว</span></a>
-  <a class="nav-back" href="javascript:void(0)" onclick="goMainDashboard()"><i class="bi bi-arrow-left"></i> Main Dashboard</a>
-</nav>
-
-<div class="container-fluid p-3 p-md-4">
-
-  <div class="dashboard-header">
-    <div>
-      <h1 class="dashboard-title">AEC / Foreign Worker Analytics</h1>
-      <p class="dashboard-subtitle">วิเคราะห์พนักงานสัญชาติพม่าและลาวในเครือข่ายสาขา</p>
-    </div>
-    <button class="btn btn-sm btn-light border" onclick="resetFilters()"><i class="bi bi-arrow-counterclockwise"></i> Reset Filters</button>
+<!-- TOPBAR -->
+<header class="topbar">
+  <a class="topbar-brand" href="javascript:void(0)" onclick="goMain()">
+    <div class="dot"></div>
+    <span>HR Analytics</span>
+    <span style="color:rgba(255,255,255,.3);margin:0 2px;">/</span>
+    <span style="color:#e2e8f0;">AEC Workforce</span>
+    <span class="topbar-pill ms-2">Emp_Category = AEC</span>
+  </a>
+  <div class="topbar-actions">
+    <span id="lastUpdate"></span>
+    <button class="topbar-btn" onclick="goMain()"><i class="bi bi-arrow-left"></i> Main Dashboard</button>
+    <button class="topbar-btn primary" onclick="window.print()"><i class="bi bi-printer"></i> Print / Export</button>
   </div>
+</header>
 
-  <div class="filter-section">
-    <div class="row g-3">
-      <div class="col-md-3">
-        <label class="filter-label"><i class="bi bi-calendar-range"></i> Date Range (Snapshot As Of)</label>
-        <input type="date" id="dateEnd" class="form-control form-control-sm" onchange="triggerFilter()">
-      </div>
-      <div class="col-md-3">
-        <label class="filter-label"><i class="bi bi-flag-fill"></i> สัญชาติ</label>
-        <div class="btn-group btn-group-sm btn-toggle-group w-100" role="group">
-          <button type="button" class="btn btn-outline-secondary active" data-nat="all" onclick="setNationality('all', this)">ทั้งหมด</button>
-          <button type="button" class="btn btn-outline-secondary" data-nat="myanmar" onclick="setNationality('myanmar', this)">พม่า</button>
-          <button type="button" class="btn btn-outline-secondary" data-nat="lao" onclick="setNationality('lao', this)">ลาว</button>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <label class="filter-label"><i class="bi bi-shop"></i> Store Format</label>
-        <select id="selFormat" class="form-select form-select-sm" onchange="triggerFilter()">
-          <option value="all">All Formats</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="filter-label"><i class="bi bi-diagram-3"></i> Department</label>
-        <select id="selDept" class="form-select form-select-sm" onchange="triggerFilter()">
-          <option value="all">All Departments</option>
-        </select>
-      </div>
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label class="filter-label"><i class="bi bi-calendar3"></i>&nbsp; Snapshot Date</label>
+    <input type="date" id="dateEnd" class="filter-input" onchange="triggerFilter()">
+  </div>
+  <div class="filter-group">
+    <label class="filter-label"><i class="bi bi-flag-fill"></i>&nbsp; Nationality</label>
+    <div class="seg-btns">
+      <button class="seg-btn active" data-nat="all" onclick="setNat('all',this)">All AEC</button>
+      <button class="seg-btn" data-nat="myanmar" onclick="setNat('myanmar',this)">พม่า</button>
+      <button class="seg-btn" data-nat="lao" onclick="setNat('lao',this)">ลาว</button>
+      <button class="seg-btn" data-nat="thai" onclick="setNat('thai',this)">ไทย</button>
     </div>
   </div>
+  <div class="filter-group">
+    <label class="filter-label"><i class="bi bi-shop"></i>&nbsp; Format</label>
+    <select id="selFormat" class="filter-input" onchange="triggerFilter()">
+      <option value="all">All Formats</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label"><i class="bi bi-diagram-3"></i>&nbsp; Department</label>
+    <select id="selDept" class="filter-input" onchange="triggerFilter()">
+      <option value="all">All Departments</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label"><i class="bi bi-diagram-2"></i>&nbsp; Subregion</label>
+    <select id="selSubregion" class="filter-input" onchange="triggerFilter()">
+      <option value="all">All Subregions</option>
+    </select>
+  </div>
+  <button class="filter-reset" onclick="resetFilters()"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+</div>
 
-  <div class="row g-3 mb-3">
-    <div class="col-6 col-md-3 col-lg-2">
-      <div class="kpi-card">
-        <i class="bi bi-people-fill kpi-icon"></i>
-        <div class="kpi-title">Total AEC</div>
-        <div class="kpi-number" id="kpiTotal">0</div>
-        <div class="kpi-sub" id="kpiTotalPct">- % of workforce</div>
-      </div>
+<!-- MAIN CONTENT -->
+<div class="content">
+
+  <!-- KPI STRIP -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total AEC Active</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-sub" id="kpiTotalPct">% ของพนักงานทั้งหมด</div>
     </div>
-    <div class="col-6 col-md-3 col-lg-2">
-      <div class="kpi-card myanmar">
-        <i class="bi bi-person-fill kpi-icon" style="color: var(--myanmar-color);"></i>
-        <div class="kpi-title">พม่า (Myanmar)</div>
-        <div class="kpi-number" id="kpiMyanmar">0</div>
-        <div class="kpi-sub" id="kpiMyanmarPct">- % ของ AEC</div>
-      </div>
+    <div class="kpi-card myanmar">
+      <div class="kpi-label">พม่า (Myanmar)</div>
+      <div class="kpi-value" id="kpiMyanmar">—</div>
+      <div class="kpi-sub" id="kpiMyanmarPct">% ของ AEC</div>
     </div>
-    <div class="col-6 col-md-3 col-lg-2">
-      <div class="kpi-card lao">
-        <i class="bi bi-person-fill kpi-icon" style="color: var(--lao-color);"></i>
-        <div class="kpi-title">ลาว (Lao)</div>
-        <div class="kpi-number" id="kpiLao">0</div>
-        <div class="kpi-sub" id="kpiLaoPct">- % ของ AEC</div>
-      </div>
+    <div class="kpi-card lao">
+      <div class="kpi-label">ลาว (Lao)</div>
+      <div class="kpi-value" id="kpiLao">—</div>
+      <div class="kpi-sub" id="kpiLaoPct">% ของ AEC</div>
     </div>
-    <div class="col-6 col-md-3 col-lg-2">
-      <div class="kpi-card success">
-        <i class="bi bi-person-plus-fill kpi-icon" style="color: #10b981;"></i>
-        <div class="kpi-title">Hires (YTD)</div>
-        <div class="kpi-number" id="kpiHires">0</div>
-        <div class="kpi-sub">เข้างานในปีปัจจุบัน</div>
-      </div>
+    <div class="kpi-card thai">
+      <div class="kpi-label">ไทย (AEC Role)</div>
+      <div class="kpi-value" id="kpiThai">—</div>
+      <div class="kpi-sub" id="kpiThaiPct">% ของ AEC</div>
     </div>
-    <div class="col-6 col-md-3 col-lg-2">
-      <div class="kpi-card danger">
-        <i class="bi bi-person-dash-fill kpi-icon" style="color: #ef4444;"></i>
-        <div class="kpi-title">Resigns (YTD)</div>
-        <div class="kpi-number" id="kpiResigns">0</div>
-        <div class="kpi-sub">ลาออกในปีปัจจุบัน</div>
-      </div>
+    <div class="kpi-card hires">
+      <div class="kpi-label">Hires — YTD</div>
+      <div class="kpi-value" id="kpiHires">—</div>
+      <div class="kpi-sub">เข้างานปีนี้</div>
     </div>
-    <div class="col-6 col-md-3 col-lg-2">
-      <div class="kpi-card warning">
-        <i class="bi bi-shop-window kpi-icon" style="color: #f59e0b;"></i>
-        <div class="kpi-title">Stores with AEC</div>
-        <div class="kpi-number" id="kpiStores">0</div>
-        <div class="kpi-sub">สาขาที่มีพนักงาน AEC</div>
-      </div>
+    <div class="kpi-card resigns">
+      <div class="kpi-label">Resigns — YTD</div>
+      <div class="kpi-value" id="kpiResigns">—</div>
+      <div class="kpi-sub" id="kpiTurnoverRate">Turnover rate</div>
     </div>
   </div>
 
-  <div class="row g-3">
-    <div class="col-lg-4">
-      <div class="card-custom">
-        <div class="card-head"><span><i class="bi bi-pie-chart-fill theme-text me-2"></i>สัดส่วนสัญชาติ</span></div>
-        <div class="card-body-custom">
-          <div style="height: 280px;"><canvas id="chartNat"></canvas></div>
+  <!-- ROW 1: TREND + NAT SPLIT -->
+  <div class="section-label">Workforce Overview</div>
+  <div class="chart-grid two-one">
+    <div class="chart-card">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title"><span class="icon"><i class="bi bi-bar-chart-line"></i></span> Monthly Hires vs Resigns (AEC)</div>
+          <div class="chart-subtitle">เฉพาะพนักงานที่มี Emp_Category = AEC</div>
+        </div>
+        <div class="legend-pills">
+          <div class="lpill"><div class="dot" style="background:var(--thai)"></div>Hires</div>
+          <div class="lpill"><div class="dot" style="background:var(--myanmar)"></div>Resigns</div>
         </div>
       </div>
+      <div class="chart-body"><div style="height:220px"><canvas id="chartTrend"></canvas></div></div>
     </div>
-    <div class="col-lg-8">
-      <div class="card-custom">
-        <div class="card-head"><span><i class="bi bi-bar-chart-fill theme-text me-2"></i>Top 10 สาขาที่มีพนักงาน AEC มากที่สุด</span></div>
-        <div class="card-body-custom">
-          <div style="height: 280px;"><canvas id="chartTopStore"></canvas></div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title"><span class="icon"><i class="bi bi-pie-chart"></i></span> Nationality Split</div>
+          <div class="chart-subtitle">สัดส่วนสัญชาติ</div>
         </div>
       </div>
+      <div class="chart-body"><div style="height:220px"><canvas id="chartNat"></canvas></div></div>
     </div>
   </div>
 
-  <div class="row g-3">
-    <div class="col-lg-6">
-      <div class="card-custom">
-        <div class="card-head"><span><i class="bi bi-diagram-3-fill theme-text me-2"></i>AEC แยกตามแผนก</span></div>
-        <div class="card-body-custom">
-          <div style="height: 300px;"><canvas id="chartDept"></canvas></div>
+  <!-- ROW 2: DEPT + LEVEL + STORE CONCEN. -->
+  <div class="section-label">Distribution Analysis</div>
+  <div class="chart-grid three">
+    <div class="chart-card">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title"><span class="icon"><i class="bi bi-grid-3x3-gap"></i></span> By Department</div>
         </div>
       </div>
+      <div class="chart-body"><div style="height:220px"><canvas id="chartDept"></canvas></div></div>
     </div>
-    <div class="col-lg-6">
-      <div class="card-custom">
-        <div class="card-head"><span><i class="bi bi-layers-fill theme-text me-2"></i>AEC แยกตาม Level</span></div>
-        <div class="card-body-custom">
-          <div style="height: 300px;"><canvas id="chartLevel"></canvas></div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title"><span class="icon"><i class="bi bi-layers"></i></span> By Subregion</div>
         </div>
       </div>
+      <div class="chart-body"><div style="height:220px"><canvas id="chartRegion"></canvas></div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title"><span class="icon"><i class="bi bi-percent"></i></span> AEC Concentration %</div>
+          <div class="chart-subtitle">Top 10 สาขา AEC สูงสุด</div>
+        </div>
+      </div>
+      <div class="chart-body"><div style="height:220px"><canvas id="chartConcentration"></canvas></div></div>
     </div>
   </div>
 
-  <div class="card-custom">
-    <div class="card-head">
-      <span><i class="bi bi-table theme-text me-2"></i>รายละเอียดรายสาขา</span>
-      <input type="text" id="storeSearch" class="form-control form-control-sm" style="width: 220px;" placeholder="🔍 ค้นหาสาขา..." oninput="renderStoreTable()">
+  <!-- ROW 3: STORE TABLE -->
+  <div class="section-label">Store Detail</div>
+  <div class="chart-card">
+    <div class="chart-head" style="padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:0;">
+      <div class="chart-title"><span class="icon"><i class="bi bi-table"></i></span> รายละเอียดรายสาขา</div>
+      <input type="text" id="storeSearch" class="table-search" placeholder="🔍 ค้นหาสาขา..." oninput="renderTable()">
     </div>
-    <div class="card-body-custom" style="max-height: 500px; overflow-y: auto;">
-      <table class="table-custom">
+    <div class="table-wrap">
+      <table class="stat-table">
         <thead>
           <tr>
-            <th>Store No</th>
-            <th>Store Name</th>
-            <th>Format</th>
+            <th width="40">#</th>
+            <th>Store</th>
             <th>Subregion</th>
-            <th class="text-end">Myanmar</th>
-            <th class="text-end">Lao</th>
-            <th class="text-end">Total AEC</th>
+            <th>Format</th>
+            <th class="text-end">Total Staff</th>
+            <th class="text-end">AEC</th>
+            <th class="text-end">พม่า</th>
+            <th class="text-end">ลาว</th>
+            <th class="text-end">ไทย(AEC)</th>
+            <th class="text-end">AEC %</th>
           </tr>
         </thead>
-        <tbody id="storeTableBody"></tbody>
+        <tbody id="tableBody"></tbody>
       </table>
     </div>
   </div>
 
-</div>
+</div><!-- /content -->
 
 <script>
-  const MOCK_RESPONSE = { targets: [], applicants: [], staff: [], parttime: [] };
+  const MOCK = { targets: [], applicants: [], staff: [], parttime: [] };
   if (typeof google === 'undefined') {
-    window.google = { script: { run: { withSuccessHandler: function(cb){ return { withFailureHandler: function(){ return { getDashboardData: function(){ setTimeout(() => cb(MOCK_RESPONSE), 500); }, getWebAppUrl: function(){ setTimeout(() => cb(''), 100); } }; } }; } } } };
+    window.google = { script: { run: { withSuccessHandler: cb => ({ withFailureHandler: () => ({ getDashboardData: () => setTimeout(() => cb(MOCK), 400), getWebAppUrl: () => setTimeout(() => cb(''), 100) }) }) } } };
   }
   Chart.register(ChartDataLabels);
-  Chart.defaults.font.family = "'Sarabun', sans-serif";
-  Chart.defaults.color = "#858c94";
+  Chart.defaults.font.family = "'Inter', 'Sarabun', sans-serif";
+  Chart.defaults.color = '#64748B';
+  Chart.defaults.plugins.legend.display = false;
+  Chart.defaults.plugins.datalabels.display = false;
 
-  const appState = {
-    rawStaff: [],
-    storeMetaMap: {},
-    nationalityFilter: 'all',
+  const S = {
+    rawStaff: [],       // only AEC records
+    allStaff: [],       // all staff for total headcount
+    storeMeta: {},      // storeNo -> { name, format, subregion, od, regionCEO }
+    storeTotals: {},    // storeNo -> total active headcount (all categories)
+    natFilter: 'all',
     charts: {},
-    computed: null,
-    webAppUrl: ''
+    webUrl: '',
+    computed: null
   };
 
-  function cleanStr(s) { return String(s || '').trim(); }
-  function parsePastDate(str) {
+  // ── UTILS ─────────────────────────────────────────────────────────────────
+  const fmt  = n => (n || 0).toLocaleString();
+  const pct  = (n, d) => d > 0 ? ((n / d) * 100).toFixed(1) : '0.0';
+  const cs   = s => String(s || '').trim();
+
+  function parseDt(str) {
     if (!str) return null;
-    if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
-    let s = String(str).trim(); if (!s) return null;
+    let s = cs(str);
     if (s.includes('/')) {
-      let p = s.split(' ')[0].split('/');
-      if (p.length === 3) {
-        let d = parseInt(p[0],10), m = parseInt(p[1],10), y = parseInt(p[2],10);
-        if (y < 100) y += 2000;
-        let dt = new Date(y, m-1, d); return isNaN(dt.getTime()) ? null : dt;
-      }
+      let [d, m, y] = s.split(' ')[0].split('/').map(Number);
+      if (!d || !m || !y) return null;
+      if (y < 100) y += 2000;
+      let dt = new Date(y, m - 1, d);
+      return isNaN(dt) ? null : dt;
     }
-    if (/^\d{4}-\d{2}-\d{2}/.test(s)) { let dt = new Date(s); return isNaN(dt.getTime()) ? null : dt; }
-    return null;
-  }
-  function formatNum(n) { return (n || 0).toLocaleString(); }
-
-  // นับเฉพาะ Myanmar (พม่า) + Lao เท่านั้น
-  function getAECCategory(nat) {
-    let n = cleanStr(nat).toLowerCase();
-    if (n === 'lao') return 'Lao';
-    if (n === 'พม่า' || n === 'myanmar' || n.includes('myanmar') || n.includes('burma')) return 'Myanmar';
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) { let dt = new Date(s); return isNaN(dt) ? null : dt; }
     return null;
   }
 
-  $(document).ready(function(){
-    let today = new Date();
-    document.getElementById('dateEnd').valueAsDate = today;
-    google.script.run.withSuccessHandler(function(url){ appState.webAppUrl = url || ''; }).getWebAppUrl();
+  function isActiveAt(s, dEnd) {
+    let jd = parseDt(s.joinDate), td = parseDt(s.termDate);
+    let statusActive = cs(s.status).toLowerCase().includes('active') && !cs(s.status).toLowerCase().includes('inactive');
+    let started = jd ? jd <= dEnd : statusActive;
+    let notTerm  = !td || td > dEnd;
+    return started && notTerm;
+  }
+
+  function getNatKey(nat) {
+    let n = cs(nat).toLowerCase();
+    if (n === 'พม่า' || n.includes('myanmar') || n.includes('burma')) return 'myanmar';
+    if (n === 'lao') return 'lao';
+    if (n === 'thai' || n === 'ไทย') return 'thai';
+    return 'other';
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  $(document).ready(function() {
+    document.getElementById('dateEnd').valueAsDate = new Date();
+    google.script.run.withSuccessHandler(u => S.webUrl = u || '').getWebAppUrl();
     google.script.run
-      .withSuccessHandler(initDashboard)
-      .withFailureHandler(function(err){ alert('❌ โหลดข้อมูลล้มเหลว: ' + err.message); $('#loading').fadeOut(300); })
+      .withSuccessHandler(boot)
+      .withFailureHandler(e => { alert('❌ ' + e.message); $('#loading').hide(); })
       .getDashboardData();
   });
 
-  function initDashboard(payload) {
-    let res = (typeof payload === 'string') ? JSON.parse(payload) : payload;
-    if (res.error) { alert('Error: ' + res.message); $('#loading').fadeOut(300); return; }
+  function boot(payload) {
+    let res = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    if (res.error) { alert('Error: ' + res.message); $('#loading').hide(); return; }
 
-    // Build store meta map
+    // Store meta
     res.targets.forEach(t => {
-      let k = cleanStr(t.storeNo);
-      if (!appState.storeMetaMap[k]) {
-        appState.storeMetaMap[k] = {
-          name: t.storeName || '',
-          format: cleanStr(t.format),
-          subregion: cleanStr(t.subregion || t.area || ''),
-          od: cleanStr(t.od),
-          regionalCEO: cleanStr(t.regionalCEO || '')
-        };
-      }
+      let k = cs(t.storeNo);
+      if (!S.storeMeta[k]) S.storeMeta[k] = { name: t.storeName || '', format: cs(t.format), subregion: cs(t.subregion || t.area || ''), od: cs(t.od), regionalCEO: cs(t.regionalCEO || '') };
     });
 
-    // เก็บเฉพาะ AEC (Myanmar + Lao)
-    appState.rawStaff = res.staff.filter(s => getAECCategory(s.nationality) !== null);
+    S.allStaff = res.staff;
+    S.rawStaff = res.staff.filter(s => cs(s.empCategory).toUpperCase() === 'AEC');
 
-    // Total active workforce (for % calc)
-    appState.totalActive = res.staff.length;
+    // Populate filters
+    let formats = new Set(), depts = new Set(), subs = new Set();
+    S.rawStaff.forEach(s => {
+      let m = S.storeMeta[cs(s.storeNo)];
+      if (m) { if (m.format) formats.add(m.format); if (m.subregion) subs.add(m.subregion); }
+      if (s.dept) depts.add(cs(s.dept));
+    });
+    fillSelect('selFormat', [...formats].sort());
+    fillSelect('selDept',   [...depts].sort());
+    fillSelect('selSubregion', [...subs].sort());
 
-    // Populate filter dropdowns
-    populateFilters();
-    $('#loading').fadeOut(300);
+    $('#lastUpdate').text('Data as of ' + new Date().toLocaleDateString('th-TH'));
+    $('#loading').fadeOut(250);
     triggerFilter();
   }
 
-  function populateFilters() {
-    let formats = new Set(); let depts = new Set();
-    appState.rawStaff.forEach(s => {
-      let meta = appState.storeMetaMap[cleanStr(s.storeNo)];
-      if (meta && meta.format) formats.add(meta.format);
-      if (s.dept) depts.add(cleanStr(s.dept));
-    });
-    let fmtSel = document.getElementById('selFormat');
-    [...formats].sort().forEach(f => { let o = document.createElement('option'); o.value = f; o.textContent = f; fmtSel.appendChild(o); });
-    let dSel = document.getElementById('selDept');
-    [...depts].sort().forEach(d => { let o = document.createElement('option'); o.value = d; o.textContent = d; dSel.appendChild(o); });
+  function fillSelect(id, arr) {
+    let sel = document.getElementById(id);
+    arr.forEach(v => { let o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
   }
 
-  function setNationality(val, btn) {
-    appState.nationalityFilter = val;
-    $('.btn-toggle-group .btn').removeClass('active');
-    $(btn).addClass('active');
+  // ── FILTER ────────────────────────────────────────────────────────────────
+  function setNat(val, btn) {
+    S.natFilter = val;
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.nat === val));
     triggerFilter();
   }
 
   function resetFilters() {
     document.getElementById('dateEnd').valueAsDate = new Date();
-    document.getElementById('selFormat').value = 'all';
-    document.getElementById('selDept').value = 'all';
+    ['selFormat','selDept','selSubregion'].forEach(id => document.getElementById(id).value = 'all');
     document.getElementById('storeSearch').value = '';
-    setNationality('all', document.querySelector('[data-nat="all"]'));
+    setNat('all', document.querySelector('[data-nat="all"]'));
   }
 
-  function triggerFilter() {
-    compute();
-    renderAll();
-  }
+  function triggerFilter() { compute(); render(); }
 
+  // ── COMPUTE ───────────────────────────────────────────────────────────────
   function compute() {
     let dEndVal = document.getElementById('dateEnd').value;
-    let dEnd = dEndVal ? new Date(dEndVal) : new Date();
-    dEnd.setHours(23,59,59,999);
-    let ytdStart = new Date(dEnd.getFullYear(), 0, 1); ytdStart.setHours(0,0,0,0);
+    let dEnd = dEndVal ? new Date(dEndVal) : new Date(); dEnd.setHours(23, 59, 59, 999);
+    let ytdStart = new Date(dEnd.getFullYear(), 0, 1);
+    let selFmt   = document.getElementById('selFormat').value;
+    let selDept  = document.getElementById('selDept').value;
+    let selSub   = document.getElementById('selSubregion').value;
+    let natF     = S.natFilter;
 
-    let selFmt = document.getElementById('selFormat').value;
-    let selDept = document.getElementById('selDept').value;
-    let natFilter = appState.nationalityFilter;
+    // Total active all staff per store (for concentration %)
+    let storeTotal = {};
+    S.allStaff.forEach(s => {
+      if (!isActiveAt(s, dEnd)) return;
+      let k = cs(s.storeNo);
+      storeTotal[k] = (storeTotal[k] || 0) + 1;
+    });
 
-    let myanmarActive = 0, laoActive = 0;
-    let hires = 0, resigns = 0;
-    let byStore = {}; // storeNo -> { myanmar, lao, name, format, subregion }
-    let byDept = {};  // dept -> { myanmar, lao }
-    let byLevel = {}; // level -> { myanmar, lao }
-    let seenEmp = new Set();
+    let mm = 0, la = 0, th = 0, hires = 0, resigns = 0;
+    let byStore = {}, byDept = {}, byRegion = {}, byMonth = {}, seenEmp = new Set();
 
-    appState.rawStaff.forEach(s => {
-      let cat = getAECCategory(s.nationality);
-      if (!cat) return;
-      if (natFilter === 'myanmar' && cat !== 'Myanmar') return;
-      if (natFilter === 'lao' && cat !== 'Lao') return;
-
-      let storeNo = cleanStr(s.storeNo);
-      let meta = appState.storeMetaMap[storeNo] || { name: '-', format: '-', subregion: '-' };
-      if (selFmt !== 'all' && meta.format !== selFmt) return;
-
-      let dept = cleanStr(s.dept);
-      if (selDept !== 'all' && dept !== selDept) return;
-
-      let jd = parsePastDate(s.joinDate);
-      let td = parsePastDate(s.termDate);
-      let isStatusActive = false;
-      if (s.status) {
-        let st = String(s.status).toLowerCase().trim();
-        if (st === 'active' || (st.includes('active') && !st.includes('inactive'))) isStatusActive = true;
+    function passFilters(s) {
+      let m = S.storeMeta[cs(s.storeNo)];
+      if (selFmt !== 'all' && (!m || m.format !== selFmt)) return false;
+      if (selDept !== 'all' && cs(s.dept) !== selDept) return false;
+      if (selSub !== 'all' && (!m || m.subregion !== selSub)) return false;
+      if (natF !== 'all') {
+        let nk = getNatKey(s.nationality);
+        if (nk !== natF) return false;
       }
-      let isStartedCurr = jd ? (jd <= dEnd) : isStatusActive;
-      let isNotTerminatedCurr = !td || td > dEnd;
-      let isActive = isStartedCurr && isNotTerminatedCurr;
+      return true;
+    }
 
-      let empId = cleanStr(s.empId);
-      if (isActive) {
+    S.rawStaff.forEach(s => {
+      if (!passFilters(s)) return;
+      let storeNo = cs(s.storeNo);
+      let m = S.storeMeta[storeNo] || { name: '-', format: '-', subregion: '-' };
+      let jd = parseDt(s.joinDate), td = parseDt(s.termDate);
+      let empId = cs(s.empId);
+      let nk = getNatKey(s.nationality);
+
+      // Active count
+      if (isActiveAt(s, dEnd)) {
         if (!empId || !seenEmp.has(empId)) {
-          if (cat === 'Myanmar') myanmarActive++;
-          if (cat === 'Lao') laoActive++;
+          if (nk === 'myanmar') mm++;
+          else if (nk === 'lao') la++;
+          else if (nk === 'thai') th++;
           if (empId) seenEmp.add(empId);
 
-          if (!byStore[storeNo]) byStore[storeNo] = { myanmar: 0, lao: 0, name: meta.name, format: meta.format, subregion: meta.subregion };
-          if (cat === 'Myanmar') byStore[storeNo].myanmar++;
-          else byStore[storeNo].lao++;
+          // byStore
+          if (!byStore[storeNo]) byStore[storeNo] = { name: m.name, format: m.format, sub: m.subregion, mm: 0, la: 0, th: 0, unk: 0 };
+          byStore[storeNo][nk === 'other' ? 'unk' : nk]++;
 
-          if (!byDept[dept]) byDept[dept] = { myanmar: 0, lao: 0 };
-          if (cat === 'Myanmar') byDept[dept].myanmar++;
-          else byDept[dept].lao++;
+          // byDept
+          let dept = cs(s.dept) || '(unspecified)';
+          if (!byDept[dept]) byDept[dept] = { mm: 0, la: 0, th: 0 };
+          byDept[dept][nk === 'other' ? 'mm' : nk]++;
 
-          let lvl = cleanStr(s.level) || '(unspecified)';
-          if (!byLevel[lvl]) byLevel[lvl] = { myanmar: 0, lao: 0 };
-          if (cat === 'Myanmar') byLevel[lvl].myanmar++;
-          else byLevel[lvl].lao++;
+          // byRegion
+          let reg = m.subregion || '(unspecified)';
+          if (!byRegion[reg]) byRegion[reg] = { mm: 0, la: 0, th: 0 };
+          byRegion[reg][nk === 'other' ? 'mm' : nk]++;
         }
       }
 
-      // Hires & Resigns YTD (เฉพาะที่ผ่าน filter แล้ว)
-      if (jd && jd >= ytdStart && jd <= dEnd) hires++;
-      if (td && td >= ytdStart && td <= dEnd) resigns++;
+      // Hires/Resigns YTD
+      if (jd && jd >= ytdStart && jd <= dEnd) {
+        hires++;
+        let mk = jd.getFullYear() + '-' + String(jd.getMonth()+1).padStart(2,'0');
+        if (!byMonth[mk]) byMonth[mk] = { h: 0, r: 0 };
+        byMonth[mk].h++;
+      }
+      if (td && td >= ytdStart && td <= dEnd) {
+        resigns++;
+        let mk = td.getFullYear() + '-' + String(td.getMonth()+1).padStart(2,'0');
+        if (!byMonth[mk]) byMonth[mk] = { h: 0, r: 0 };
+        byMonth[mk].r++;
+      }
     });
 
-    appState.computed = {
-      myanmarActive, laoActive,
-      totalAEC: myanmarActive + laoActive,
-      hires, resigns,
-      byStore, byDept, byLevel,
-      totalActive: appState.totalActive
-    };
+    let total = mm + la + th;
+    let totalAll = Object.values(storeTotal).reduce((a, b) => a + b, 0);
+
+    S.computed = { mm, la, th, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, dEnd };
   }
 
-  function renderAll() {
-    let c = appState.computed;
-    let total = c.totalAEC;
-    $('#kpiTotal').text(formatNum(total));
-    $('#kpiMyanmar').text(formatNum(c.myanmarActive));
-    $('#kpiLao').text(formatNum(c.laoActive));
-    $('#kpiHires').text(formatNum(c.hires));
-    $('#kpiResigns').text(formatNum(c.resigns));
-    $('#kpiStores').text(formatNum(Object.keys(c.byStore).length));
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  function render() {
+    let c = S.computed;
+    // KPI
+    $('#kpiTotal').text(fmt(c.total));
+    $('#kpiTotalPct').text(pct(c.total, c.totalAll) + '% ของพนักงานทั้งหมด');
+    $('#kpiMyanmar').text(fmt(c.mm));
+    $('#kpiMyanmarPct').text(pct(c.mm, c.total) + '% ของ AEC');
+    $('#kpiLao').text(fmt(c.la));
+    $('#kpiLaoPct').text(pct(c.la, c.total) + '% ของ AEC');
+    $('#kpiThai').text(fmt(c.th));
+    $('#kpiThaiPct').text(pct(c.th, c.total) + '% ของ AEC');
+    $('#kpiHires').text(fmt(c.hires));
+    $('#kpiResigns').text(fmt(c.resigns));
+    let tr = (c.hires + c.resigns) > 0 ? ((c.resigns / Math.max(c.total, 1)) * 100).toFixed(1) + '% Turnover Rate (YTD)' : '—';
+    $('#kpiTurnoverRate').text(tr);
 
-    let pct = c.totalActive > 0 ? ((total / c.totalActive) * 100).toFixed(2) : '0';
-    $('#kpiTotalPct').text(pct + '% ของพนักงานทั้งหมด');
-    let mPct = total > 0 ? ((c.myanmarActive / total) * 100).toFixed(1) : '0';
-    let lPct = total > 0 ? ((c.laoActive / total) * 100).toFixed(1) : '0';
-    $('#kpiMyanmarPct').text(mPct + '% ของ AEC');
-    $('#kpiLaoPct').text(lPct + '% ของ AEC');
-
-    renderNatChart();
-    renderTopStoreChart();
-    renderDeptChart();
-    renderLevelChart();
-    renderStoreTable();
+    renderTrend(); renderNat(); renderDept(); renderRegion(); renderConcentration(); renderTable();
   }
 
-  function destroyChart(name) {
-    if (appState.charts[name]) { appState.charts[name].destroy(); delete appState.charts[name]; }
+  function killChart(id) { if (S.charts[id]) { S.charts[id].destroy(); delete S.charts[id]; } }
+
+  const COLORS = { myanmar: '#E11D48', lao: '#0284C7', thai: '#059669', other: '#94A3B8' };
+
+  function renderTrend() {
+    killChart('trend');
+    let c = S.computed;
+    let now = c.dEnd, months = [];
+    for (let i = 11; i >= 0; i--) { let d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')); }
+    let labels = months.map(m => { let [y,mo] = m.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1] + "'"+y.slice(2); });
+    let hiresData  = months.map(m => (c.byMonth[m] || {}).h || 0);
+    let resignsData= months.map(m => (c.byMonth[m] || {}).r || 0);
+    let ctx = document.getElementById('chartTrend').getContext('2d');
+    S.charts.trend = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'Hires', data: hiresData, backgroundColor: '#059669', borderRadius: 4 },
+        { label: 'Resigns', data: resignsData, backgroundColor: '#E11D48', borderRadius: 4 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top', labels: { font: { size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } }, datalabels: { display: false } },
+        scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { precision: 0, font: { size: 10 } } } }
+      }
+    });
   }
 
-  function renderNatChart() {
-    destroyChart('nat');
-    let c = appState.computed;
+  function renderNat() {
+    killChart('nat');
+    let c = S.computed;
+    let data = [], labels = [], colors = [];
+    if (c.mm) { data.push(c.mm); labels.push('พม่า'); colors.push(COLORS.myanmar); }
+    if (c.la) { data.push(c.la); labels.push('ลาว');  colors.push(COLORS.lao); }
+    if (c.th) { data.push(c.th); labels.push('ไทย');  colors.push(COLORS.thai); }
     let ctx = document.getElementById('chartNat').getContext('2d');
-    appState.charts.nat = new Chart(ctx, {
+    S.charts.nat = new Chart(ctx, {
       type: 'doughnut',
-      data: {
-        labels: ['พม่า (Myanmar)', 'ลาว (Lao)'],
-        datasets: [{
-          data: [c.myanmarActive, c.laoActive],
-          backgroundColor: ['#DC2626', '#2563EB'],
-          borderWidth: 2,
-          borderColor: '#fff'
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 3, borderColor: '#fff', hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
         plugins: {
-          legend: { position: 'bottom', labels: { font: { size: 12, weight: 600 } } },
-          datalabels: {
-            color: '#fff',
-            font: { weight: 700, size: 14 },
-            formatter: (v, ctx) => {
-              let total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
-              if (total === 0 || v === 0) return '';
-              return v + '\n(' + ((v/total)*100).toFixed(0) + '%)';
-            }
-          }
+          legend: { display: true, position: 'bottom', labels: { font: { size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } },
+          datalabels: { display: true, color: '#fff', font: { size: 12, weight: 800 }, formatter: (v, ctx) => { let t = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0); return v > 0 ? v + '\n(' + ((v/t)*100).toFixed(0) + '%)' : ''; } }
         }
       }
     });
   }
 
-  function renderTopStoreChart() {
-    destroyChart('topStore');
-    let c = appState.computed;
-    let arr = Object.entries(c.byStore).map(([k,v]) => ({
-      store: k, label: k + ' ' + (v.name || ''), m: v.myanmar, l: v.lao, total: v.myanmar + v.lao
-    }));
-    arr.sort((a,b) => b.total - a.total);
-    arr = arr.slice(0, 10);
-    let ctx = document.getElementById('chartTopStore').getContext('2d');
-    appState.charts.topStore = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: arr.map(x => x.label.length > 25 ? x.label.substring(0,25) + '…' : x.label),
-        datasets: [
-          { label: 'พม่า', data: arr.map(x => x.m), backgroundColor: '#DC2626' },
-          { label: 'ลาว', data: arr.map(x => x.l), backgroundColor: '#2563EB' }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-        plugins: {
-          legend: { position: 'top' },
-          datalabels: { color: '#fff', font: { size: 11, weight: 700 }, formatter: v => v > 0 ? v : '' }
-        },
-        scales: {
-          x: { stacked: true, beginAtZero: true },
-          y: { stacked: true, ticks: { font: { size: 10 } } }
-        }
-      }
-    });
-  }
-
-  function renderDeptChart() {
-    destroyChart('dept');
-    let c = appState.computed;
-    let arr = Object.entries(c.byDept).map(([k,v]) => ({ d: k, m: v.myanmar, l: v.lao, t: v.myanmar + v.lao }));
-    arr.sort((a,b) => b.t - a.t);
-    arr = arr.slice(0, 12);
+  function renderDept() {
+    killChart('dept');
+    let c = S.computed;
+    let arr = Object.entries(c.byDept).map(([k,v]) => ({ k, total: v.mm+v.la+v.th, mm: v.mm, la: v.la, th: v.th })).sort((a,b) => b.total-a.total);
     let ctx = document.getElementById('chartDept').getContext('2d');
-    appState.charts.dept = new Chart(ctx, {
+    S.charts.dept = new Chart(ctx, {
       type: 'bar',
-      data: {
-        labels: arr.map(x => x.d || '(unspecified)'),
-        datasets: [
-          { label: 'พม่า', data: arr.map(x => x.m), backgroundColor: '#DC2626' },
-          { label: 'ลาว', data: arr.map(x => x.l), backgroundColor: '#2563EB' }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' },
-          datalabels: { color: '#fff', font: { size: 10, weight: 700 }, formatter: v => v > 0 ? v : '' }
-        },
-        scales: {
-          x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 } },
-          y: { stacked: true, beginAtZero: true }
-        }
+      data: { labels: arr.map(x => x.k), datasets: [
+        { label: 'พม่า', data: arr.map(x => x.mm), backgroundColor: COLORS.myanmar, borderRadius: { topLeft:4, topRight:4 } },
+        { label: 'ลาว',  data: arr.map(x => x.la), backgroundColor: COLORS.lao },
+        { label: 'ไทย',  data: arr.map(x => x.th), backgroundColor: COLORS.thai }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top', labels: { font: { size: 10, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } }, datalabels: { display: false } },
+        scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 40 } }, y: { stacked: true, beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { precision: 0, font: { size: 10 } } } }
       }
     });
   }
 
-  function renderLevelChart() {
-    destroyChart('level');
-    let c = appState.computed;
-    let order = ['Temporary','Student','Staff 1','Staff 2','Staff','Officer','Supervisor','Supv.','Section Manager','SM','Manager','ASGM','SGM','(unspecified)'];
-    let arr = Object.entries(c.byLevel).map(([k,v]) => ({ d: k, m: v.myanmar, l: v.lao, t: v.myanmar + v.lao }));
-    arr.sort((a,b) => {
-      let ia = order.indexOf(a.d); let ib = order.indexOf(b.d);
-      if (ia === -1) ia = 999; if (ib === -1) ib = 999;
-      return ia - ib;
-    });
-    let ctx = document.getElementById('chartLevel').getContext('2d');
-    appState.charts.level = new Chart(ctx, {
+  function renderRegion() {
+    killChart('region');
+    let c = S.computed;
+    let arr = Object.entries(c.byRegion).map(([k,v]) => ({ k, total: v.mm+v.la+v.th, mm: v.mm, la: v.la, th: v.th })).sort((a,b) => b.total-a.total);
+    let ctx = document.getElementById('chartRegion').getContext('2d');
+    S.charts.region = new Chart(ctx, {
       type: 'bar',
-      data: {
-        labels: arr.map(x => x.d),
-        datasets: [
-          { label: 'พม่า', data: arr.map(x => x.m), backgroundColor: '#DC2626' },
-          { label: 'ลาว', data: arr.map(x => x.l), backgroundColor: '#2563EB' }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' },
-          datalabels: { color: '#fff', font: { size: 11, weight: 700 }, formatter: v => v > 0 ? v : '' }
-        },
-        scales: {
-          x: { stacked: true },
-          y: { stacked: true, beginAtZero: true }
-        }
+      data: { labels: arr.map(x => x.k), datasets: [
+        { label: 'พม่า', data: arr.map(x => x.mm), backgroundColor: COLORS.myanmar, borderRadius: { topLeft:4, topRight:4 } },
+        { label: 'ลาว',  data: arr.map(x => x.la), backgroundColor: COLORS.lao },
+        { label: 'ไทย',  data: arr.map(x => x.th), backgroundColor: COLORS.thai }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: true, position: 'top', labels: { font: { size: 10, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } }, datalabels: { display: false } },
+        scales: { x: { stacked: true, beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { precision: 0, font: { size: 10 } } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } } }
       }
     });
   }
 
-  function renderStoreTable() {
-    let c = appState.computed;
+  function renderConcentration() {
+    killChart('conc');
+    let c = S.computed;
+    let arr = Object.entries(c.byStore).map(([k, v]) => {
+      let total = v.mm + v.la + v.th;
+      let storeTot = c.storeTotal[k] || 0;
+      let concPct = storeTot > 0 ? (total / storeTot * 100) : 0;
+      return { k, label: k + (v.name ? ' ' + v.name : ''), total, storeTot, concPct };
+    }).sort((a,b) => b.concPct - a.concPct).slice(0, 10);
+
+    let ctx = document.getElementById('chartConcentration').getContext('2d');
+    S.charts.conc = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: arr.map(x => x.label.length > 22 ? x.label.slice(0,22)+'…' : x.label),
+        datasets: [{ label: 'AEC %', data: arr.map(x => parseFloat(x.concPct.toFixed(1))), backgroundColor: '#4F46E5', borderRadius: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false }, datalabels: { display: true, anchor: 'end', align: 'end', color: '#334155', font: { size: 10, weight: 700 }, formatter: v => v + '%' } },
+        scales: { x: { beginAtZero: true, max: Math.max(30, Math.ceil((Math.max(...arr.map(x=>x.concPct))||10)/5)*5+5), grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, callback: v => v + '%' } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } }
+      }
+    });
+  }
+
+  function renderTable() {
+    let c = S.computed;
     let search = document.getElementById('storeSearch').value.toLowerCase().trim();
-    let arr = Object.entries(c.byStore).map(([k,v]) => ({
-      store: k, name: v.name, format: v.format, subregion: v.subregion,
-      m: v.myanmar, l: v.lao, total: v.myanmar + v.lao
-    }));
-    if (search) {
-      arr = arr.filter(x =>
-        x.store.toLowerCase().includes(search) ||
-        (x.name || '').toLowerCase().includes(search)
-      );
-    }
-    arr.sort((a,b) => b.total - a.total);
+    let arr = Object.entries(c.byStore).map(([k, v]) => {
+      let total = v.mm + v.la + v.th;
+      let storeTot = c.storeTotal[k] || 0;
+      return { k, name: v.name, format: v.format, sub: v.sub, mm: v.mm, la: v.la, th: v.th, total, storeTot, pct: storeTot > 0 ? (total / storeTot * 100) : 0 };
+    }).sort((a, b) => b.total - a.total);
+
+    if (search) arr = arr.filter(x => x.k.toLowerCase().includes(search) || (x.name || '').toLowerCase().includes(search));
+
+    let maxPct = Math.max(...arr.map(x => x.pct), 0.01);
     let html = '';
-    arr.forEach(x => {
+    arr.forEach((x, i) => {
+      let rankCls = i === 0 ? 'rank-num gold' : 'rank-num';
       html += `<tr>
-        <td><strong>${x.store}</strong></td>
-        <td>${x.name || '-'}</td>
-        <td>${x.format || '-'}</td>
-        <td>${x.subregion || '-'}</td>
-        <td class="text-end">${x.m > 0 ? '<span class="badge-myanmar">' + x.m + '</span>' : '-'}</td>
-        <td class="text-end">${x.l > 0 ? '<span class="badge-lao">' + x.l + '</span>' : '-'}</td>
-        <td class="text-end fw-bold">${x.total}</td>
+        <td><span class="${rankCls}">${i+1}</span></td>
+        <td><strong>${x.k}</strong><span style="color:var(--text-muted);font-size:.78rem;margin-left:6px;">${x.name || ''}</span></td>
+        <td style="font-size:.78rem;color:var(--text-muted);">${x.sub || '—'}</td>
+        <td style="font-size:.78rem;color:var(--text-muted);">${x.format || '—'}</td>
+        <td class="num-cell">${fmt(x.storeTot)}</td>
+        <td class="num-cell"><strong>${fmt(x.total)}</strong></td>
+        <td class="num-cell">${x.mm > 0 ? '<span class="nat-chip mm">'+x.mm+'</span>' : '—'}</td>
+        <td class="num-cell">${x.la > 0 ? '<span class="nat-chip la">'+x.la+'</span>' : '—'}</td>
+        <td class="num-cell">${x.th > 0 ? '<span class="nat-chip th">'+x.th+'</span>' : '—'}</td>
+        <td class="num-cell pct-col">
+          ${x.pct.toFixed(1)}%
+          <div class="bar-mini"><div class="bar-mini-fill" style="width:${(x.pct/maxPct*100).toFixed(1)}%"></div></div>
+        </td>
       </tr>`;
     });
-    if (!html) html = '<tr><td colspan="7" class="text-center text-muted py-4">ไม่พบข้อมูล</td></tr>';
-    document.getElementById('storeTableBody').innerHTML = html;
+    if (!html) html = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted);font-size:.85rem;">ไม่พบข้อมูล</td></tr>';
+    document.getElementById('tableBody').innerHTML = html;
   }
 
-  function goMainDashboard() {
-    if (appState.webAppUrl) {
-      window.top.location.href = appState.webAppUrl;
-    } else {
-      window.top.location.href = window.top.location.href.split('?')[0];
-    }
+  function goMain() {
+    window.top.location.href = S.webUrl || window.top.location.href.split('?')[0];
   }
 </script>
-
 </body>
 </html>
