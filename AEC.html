@@ -151,6 +151,21 @@
     /* ── WAITING SECTION ────────────────────── */
     .kpi-card.waiting::before { background: var(--amber); }
 
+    /* ── KPI DELTA INDICATOR ─────────────────── */
+    .kpi-delta { display: inline-flex; align-items: center; gap: 3px; font-size: .7rem; font-weight: 700; margin-top: 5px; padding: 2px 7px; border-radius: 999px; }
+    .kpi-delta.up { background: #dcfce7; color: #15803d; }
+    .kpi-delta.down { background: #fee2e2; color: #b91c1c; }
+    .kpi-delta.flat { background: var(--surface); color: var(--text-muted); }
+
+    /* ── WEEK GROUP TABLE ────────────────────── */
+    .week-hdr td { background: #fffbeb; border-top: 2px solid #fde68a; border-bottom: 1px solid #fde68a; padding: 9px 14px; }
+    .week-hdr:hover td { background: #fef3c7 !important; }
+    .week-detail td { padding: 7px 12px 7px 24px; background: #fff; }
+
+    /* ── NO-DATA NOTICE ──────────────────────── */
+    .no-data-notice { background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: var(--radius-md); padding: 16px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; font-size: .85rem; }
+    .no-data-notice i { font-size: 1.4rem; color: var(--amber); flex-shrink: 0; }
+
     /* ── RESPONSIVE ──────────────────────── */
     @media (max-width: 1400px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -177,6 +192,7 @@
   <div class="topbar-actions">
     <span id="lastUpdate"></span>
     <button class="topbar-btn" onclick="goMain()"><i class="bi bi-arrow-left"></i> Main Dashboard</button>
+    <button class="topbar-btn" id="btnRefresh" onclick="forceRefresh()"><i class="bi bi-arrow-clockwise"></i> Refresh Data</button>
     <button class="topbar-btn primary" onclick="window.print()"><i class="bi bi-printer"></i> Print / Export</button>
   </div>
 </header>
@@ -226,36 +242,52 @@
       <div class="kpi-label">Total AEC Active</div>
       <div class="kpi-value" id="kpiTotal">—</div>
       <div class="kpi-sub" id="kpiTotalPct">% ของพนักงานทั้งหมด</div>
+      <div class="kpi-delta flat" id="kpiTotalDelta"></div>
     </div>
     <div class="kpi-card myanmar">
       <div class="kpi-label">พม่า (Myanmar)</div>
       <div class="kpi-value" id="kpiMyanmar">—</div>
       <div class="kpi-sub" id="kpiMyanmarPct">% ของ AEC</div>
+      <div class="kpi-delta flat" id="kpiMyanmarDelta"></div>
     </div>
     <div class="kpi-card lao">
       <div class="kpi-label">ลาว (Lao)</div>
       <div class="kpi-value" id="kpiLao">—</div>
       <div class="kpi-sub" id="kpiLaoPct">% ของ AEC</div>
+      <div class="kpi-delta flat" id="kpiLaoDelta"></div>
     </div>
     <div class="kpi-card thai">
       <div class="kpi-label">ไทย (AEC Role)</div>
       <div class="kpi-value" id="kpiThai">—</div>
       <div class="kpi-sub" id="kpiThaiPct">% ของ AEC</div>
+      <div class="kpi-delta flat" id="kpiThaiDelta"></div>
     </div>
     <div class="kpi-card hires">
       <div class="kpi-label">Hires — YTD</div>
       <div class="kpi-value" id="kpiHires">—</div>
       <div class="kpi-sub">เข้างานปีนี้</div>
+      <div class="kpi-delta flat" id="kpiHiresDelta"></div>
     </div>
     <div class="kpi-card resigns">
       <div class="kpi-label">Resigns — YTD</div>
       <div class="kpi-value" id="kpiResigns">—</div>
       <div class="kpi-sub" id="kpiTurnoverRate">Turnover rate</div>
+      <div class="kpi-delta flat" id="kpiResignsDelta"></div>
     </div>
     <div class="kpi-card waiting">
       <div class="kpi-label">Waiting to Onboard</div>
       <div class="kpi-value" id="kpiWaiting">—</div>
       <div class="kpi-sub" id="kpiWaitingSub">กำลังจะเริ่มงาน</div>
+      <div class="kpi-delta flat" id="kpiWaitingDelta"></div>
+    </div>
+  </div>
+
+  <!-- NO DATA WARNING (hidden by default) -->
+  <div id="noDataNotice" class="no-data-notice" style="display:none;">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+      <strong>ไม่พบข้อมูล AEC</strong> — ไม่สามารถระบุพนักงาน AEC จากข้อมูลที่ได้รับ<br>
+      <span style="color:var(--text-muted);">กรุณากด <strong>Refresh Data</strong> เพื่อโหลดข้อมูลใหม่ หรือตรวจสอบว่า Code.gs ในระบบ GAS ได้รับการอัพเดทเป็นเวอร์ชันล่าสุดแล้ว (V7)</span>
     </div>
   </div>
 
@@ -423,13 +455,18 @@
     if (!str) return null;
     let s = cs(str);
     if (s.includes('/')) {
-      let [d, m, y] = s.split(' ')[0].split('/').map(Number);
+      let parts = s.split(' ')[0].split('/').map(Number);
+      if (parts.length < 3 || parts.some(isNaN)) return null;
+      let [d, m, y] = parts;
       if (!d || !m || !y) return null;
       if (y < 100) y += 2000;
+      // Thai Buddhist Era (BE) detection: BE 2500 = CE 1957, BE 2600 = CE 2057
+      // Any year >= 2500 in a dd/mm/yyyy date is almost certainly BE, not CE
+      if (y >= 2500) y -= 543;
       let dt = new Date(y, m - 1, d);
       return isNaN(dt) ? null : dt;
     }
-    if (/^\d{4}-\d{2}-\d{2}/.test(s)) { let dt = new Date(s); return isNaN(dt) ? null : dt; }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) { let dt = new Date(s.slice(0, 10)); return isNaN(dt) ? null : dt; }
     return null;
   }
 
@@ -635,13 +672,56 @@
     });
     let waitCount = waitList.length;
 
-    S.computed = { mm, la, th, unk, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, waitList, waitByMonth, waitCount, dEnd };
+    // ── Previous period (30 days back) for movement indicators ─────────────
+    let dPrev = new Date(dEnd);
+    dPrev.setDate(dPrev.getDate() - 30);
+    let pMm = 0, pLa = 0, pTh = 0, pTotal = 0;
+    let pHires = 0, pResigns = 0;
+    let ytdPrev = new Date(dPrev.getFullYear(), 0, 1);
+    let seenPrev = new Set();
+    S.rawStaff.forEach(s => {
+      if (!passFilters(s)) return;
+      let empId = cs(s.empId);
+      let nk = getNatKey(s.nationality);
+      if (isActiveAt(s, dPrev)) {
+        if (!empId || !seenPrev.has(empId)) {
+          pTotal++;
+          if (nk === 'myanmar') pMm++;
+          else if (nk === 'lao') pLa++;
+          else if (nk === 'thai') pTh++;
+          if (empId) seenPrev.add(empId);
+        }
+      }
+      let jd = parseDt(s.joinDate), td = parseDt(s.termDate);
+      if (jd && jd >= ytdPrev && jd <= dPrev) pHires++;
+      if (td && td >= ytdPrev && td <= dPrev) pResigns++;
+    });
+
+    S.computed = { mm, la, th, unk, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, waitList, waitByMonth, waitCount, dEnd, pMm, pLa, pTh, pTotal, pHires, pResigns };
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────
+  function showDelta(id, curr, prev) {
+    let el = document.getElementById(id);
+    if (!el) return;
+    let diff = curr - prev;
+    if (diff === 0) { el.className = 'kpi-delta flat'; el.innerHTML = '<i class="bi bi-dash"></i> เท่ากับ 30 วันก่อน'; return; }
+    let up = diff > 0;
+    el.className = 'kpi-delta ' + (up ? 'up' : 'down');
+    el.innerHTML = `<i class="bi bi-arrow-${up ? 'up' : 'down'}-short"></i> ${up ? '+' : ''}${diff} vs 30 วันก่อน`;
+  }
+
   function render() {
     let c = S.computed;
-    // KPI
+
+    // No-data guard
+    if (c.total === 0 && S.rawStaff.length === 0) {
+      $('#noDataNotice').show();
+    } else {
+      $('#noDataNotice').hide();
+    }
+
+    // KPI values
     $('#kpiTotal').text(fmt(c.total));
     $('#kpiTotalPct').text(pct(c.total, c.totalAll) + '% ของพนักงานทั้งหมด');
     $('#kpiMyanmar').text(fmt(c.mm));
@@ -654,6 +734,16 @@
     $('#kpiResigns').text(fmt(c.resigns));
     let tr = (c.hires + c.resigns) > 0 ? ((c.resigns / Math.max(c.total, 1)) * 100).toFixed(1) + '% Turnover Rate (YTD)' : '—';
     $('#kpiTurnoverRate').text(tr);
+
+    // Movement deltas (vs 30 days ago)
+    if (c.pTotal !== undefined) {
+      showDelta('kpiTotalDelta',   c.total,   c.pTotal);
+      showDelta('kpiMyanmarDelta', c.mm,      c.pMm);
+      showDelta('kpiLaoDelta',     c.la,      c.pLa);
+      showDelta('kpiThaiDelta',    c.th,      c.pTh);
+      showDelta('kpiHiresDelta',   c.hires,   c.pHires);
+      showDelta('kpiResignsDelta', c.resigns, c.pResigns);
+    }
 
     renderTrend(); renderNat(); renderDept(); renderRegion(); renderConcentration(); renderTable(); renderWaiting();
   }
@@ -846,6 +936,8 @@
     // KPI card
     $('#kpiWaiting').text(fmt(c.waitCount));
     $('#kpiWaitingSub').text(c.waitCount > 0 ? 'เตรียมเริ่มงาน' : 'ไม่มีรายการ');
+    if (c.pTotal !== undefined) showDelta('kpiWaitingDelta', c.waitCount, S._prevWaitCount || 0);
+    S._prevWaitCount = c.waitCount;
 
     if (c.waitCount === 0) { $('#waitingSection').hide(); return; }
     $('#waitingSection').show();
@@ -888,7 +980,7 @@
       }
     });
 
-    // Detail table
+    // ── Week-grouped detail table ────────────────────────────────────────────
     let searchEl = document.getElementById('waitSearch');
     let search = searchEl ? searchEl.value.toLowerCase().trim() : '';
     let list = [...c.waitList].sort((a, b) => (a.joinDate || 0) - (b.joinDate || 0));
@@ -899,17 +991,84 @@
     );
 
     const natChip = { myanmar: '<span class="nat-chip mm">พม่า</span>', lao: '<span class="nat-chip la">ลาว</span>', thai: '<span class="nat-chip th">ไทย</span>', other: '<span class="nat-chip" style="background:#f1f5f9;color:#64748b;">ไม่ระบุ</span>' };
-    let html = list.map(x => {
-      let dateStr = x.joinDate ? x.joinDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-      return `<tr>
-        <td><strong>${x.storeNo}</strong><span style="color:var(--text-muted);font-size:.78rem;margin-left:6px;">${x.storeName || ''}</span></td>
-        <td style="font-size:.78rem;color:var(--text-muted);">${x.dept || '—'}</td>
-        <td>${natChip[x.nk] || '—'}</td>
-        <td style="font-size:.78rem;font-weight:700;color:var(--amber);">${dateStr}</td>
+    const MONTHS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+    function weekStart(dt) {
+      let d = new Date(dt);
+      let day = d.getDay() || 7;
+      if (day !== 1) d.setDate(d.getDate() - (day - 1));
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    function weekLabel(ws) {
+      let we = new Date(ws); we.setDate(ws.getDate() + 6);
+      let s = ws.getDate() + ' ' + MONTHS_TH[ws.getMonth()];
+      let e = we.getDate() + ' ' + MONTHS_TH[we.getMonth()];
+      return s + ' – ' + e + ' ' + ws.getFullYear();
+    }
+
+    // Group by week → by store+dept+nat
+    let weeks = {};
+    list.forEach(x => {
+      let ws = weekStart(x.joinDate);
+      let wk = ws.toISOString().slice(0, 10);
+      if (!weeks[wk]) weeks[wk] = { ws, groups: {} };
+      let gk = x.storeNo + '|' + x.dept + '|' + x.nk;
+      if (!weeks[wk].groups[gk]) weeks[wk].groups[gk] = { storeNo: x.storeNo, storeName: x.storeName, dept: x.dept, nk: x.nk, count: 0 };
+      weeks[wk].groups[gk].count++;
+    });
+
+    let sortedWks = Object.keys(weeks).sort();
+    let html = '';
+    sortedWks.forEach((wk, wi) => {
+      let { ws, groups } = weeks[wk];
+      let rows = Object.values(groups).sort((a, b) => b.count - a.count);
+      let wkTotal = rows.reduce((s, r) => s + r.count, 0);
+      let expanded = wi === 0;
+      let wkCls = 'wkrows' + wi;
+      html += `<tr class="week-hdr" onclick="toggleWeek('${wkCls}','wkico${wi}')">
+        <td colspan="4" style="padding:9px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <span style="font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.6px;color:var(--amber);margin-right:8px;">WEEK</span>
+              <span style="font-weight:700;font-size:.82rem;">${weekLabel(ws)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:var(--amber-lt);color:#92400e;font-size:.72rem;font-weight:700;padding:2px 10px;border-radius:999px;">${wkTotal} คน</span>
+              <i class="bi bi-chevron-${expanded ? 'up' : 'down'}" id="wkico${wi}"></i>
+            </div>
+          </div>
+        </td>
       </tr>`;
-    }).join('');
+      rows.forEach(g => {
+        html += `<tr class="week-detail ${wkCls}" style="${expanded ? '' : 'display:none;'}">
+          <td><strong>${g.storeNo}</strong><span style="color:var(--text-muted);font-size:.78rem;margin-left:6px;">${g.storeName || ''}</span></td>
+          <td style="font-size:.78rem;color:var(--text-muted);">${g.dept || '—'}</td>
+          <td>${natChip[g.nk] || natChip.other}</td>
+          <td class="num-cell"><strong style="color:var(--text);">${g.count}</strong> <span style="font-size:.72rem;color:var(--text-muted);">คน</span></td>
+        </tr>`;
+      });
+    });
     if (!html) html = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:.85rem;">ไม่พบข้อมูล</td></tr>';
     document.getElementById('waitTableBody').innerHTML = html;
+  }
+
+  function toggleWeek(cls, iconId) {
+    let rows = document.querySelectorAll('.' + cls);
+    let icon = document.getElementById(iconId);
+    let hidden = rows.length > 0 && rows[0].style.display === 'none';
+    rows.forEach(r => r.style.display = hidden ? '' : 'none');
+    if (icon) icon.className = 'bi bi-chevron-' + (hidden ? 'up' : 'down');
+  }
+
+  function forceRefresh() {
+    let btn = document.getElementById('btnRefresh');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> กำลังโหลด...'; }
+    $('#loading').fadeIn(200);
+    google.script.run
+      .withSuccessHandler(p => { boot(p); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Data'; } })
+      .withFailureHandler(e => { alert('❌ ' + e.message); $('#loading').hide(); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Data'; } })
+      .getDashboardData(true);
   }
 
   function goMain() {
