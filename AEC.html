@@ -16,6 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root {
@@ -166,6 +167,45 @@
     .no-data-notice { background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: var(--radius-md); padding: 16px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; font-size: .85rem; }
     .no-data-notice i { font-size: 1.4rem; color: var(--amber); flex-shrink: 0; }
 
+    /* ── SORTABLE TABLE HEADERS ──────────────── */
+    .stat-table th.sortable { cursor: pointer; user-select: none; position: relative; }
+    .stat-table th.sortable:hover { background: #f1f5f9; }
+    .stat-table th.sortable .sort-ico { font-size: .65rem; color: var(--text-muted); margin-left: 4px; opacity: .5; }
+    .stat-table th.sortable.active .sort-ico { color: var(--indigo); opacity: 1; }
+    .stat-table tbody tr.clickable { cursor: pointer; transition: background .12s; }
+    .stat-table tbody tr.clickable:hover td { background: #eef2ff; }
+
+    /* ── ACTION BAR / EXPORT BTN ─────────────── */
+    .action-btn { background: #fff; border: 1.5px solid var(--border); color: var(--text); font-size: .75rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all .15s; }
+    .action-btn:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-lt); }
+    .action-btn.primary { background: var(--indigo); color: #fff; border-color: var(--indigo); }
+    .action-btn.primary:hover { background: #4338ca; color: #fff; }
+    .action-btn.success { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .action-btn.success:hover { background: #15803d; color: #fff; }
+
+    /* ── MODAL (custom, on top of Bootstrap) ─── */
+    .aec-modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 1500; display: none; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+    .aec-modal-backdrop.show { display: flex; }
+    .aec-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 960px; box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden; animation: aecmodalIn .18s ease-out; }
+    @keyframes aecmodalIn { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .aec-modal.wide { max-width: 1200px; }
+    .aec-modal-head { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .aec-modal-title { font-size: 1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; margin: 0; }
+    .aec-modal-title .icon { width: 32px; height: 32px; border-radius: 8px; background: var(--indigo-lt); color: var(--indigo); display: inline-flex; align-items: center; justify-content: center; }
+    .aec-modal-sub { font-size: .78rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+    .aec-modal-actions { display: flex; align-items: center; gap: 8px; }
+    .aec-modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; padding: 4px 8px; line-height: 1; border-radius: 6px; }
+    .aec-modal-close:hover { background: var(--surface); color: var(--text); }
+    .aec-modal-body { padding: 18px 22px 22px; max-height: calc(100vh - 180px); overflow-y: auto; }
+    .aec-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
+    .aec-stat { background: var(--surface); border-radius: 10px; padding: 10px 14px; }
+    .aec-stat-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); }
+    .aec-stat-value { font-size: 1.3rem; font-weight: 800; color: var(--text); margin-top: 2px; }
+    .aec-tabs { display: flex; gap: 4px; border-bottom: 1.5px solid var(--border); margin-bottom: 14px; }
+    .aec-tab { padding: 8px 14px; font-size: .8rem; font-weight: 600; color: var(--text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; }
+    .aec-tab.active { color: var(--indigo); border-bottom-color: var(--indigo); }
+    .aec-tab:hover { color: var(--text); }
+
     /* ── RESPONSIVE ──────────────────────── */
     @media (max-width: 1400px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -193,7 +233,9 @@
     <span id="lastUpdate"></span>
     <button class="topbar-btn" onclick="goMain()"><i class="bi bi-arrow-left"></i> Main Dashboard</button>
     <button class="topbar-btn" id="btnRefresh" onclick="forceRefresh()"><i class="bi bi-arrow-clockwise"></i> Refresh Data</button>
-    <button class="topbar-btn primary" onclick="window.print()"><i class="bi bi-printer"></i> Print / Export</button>
+    <button class="topbar-btn" onclick="openTurnoverModal()"><i class="bi bi-graph-down-arrow"></i> Turnover</button>
+    <button class="topbar-btn" onclick="exportAllExcel()"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+    <button class="topbar-btn primary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
   </div>
 </header>
 
@@ -395,26 +437,30 @@
   </div>
 
   <!-- ROW 3: STORE TABLE -->
-  <div class="section-label">Store Detail</div>
+  <div class="section-label">
+    Store Detail
+    <span style="font-size:.62rem;font-weight:600;color:var(--text-muted);text-transform:none;letter-spacing:0;margin-left:6px;">คลิกแถวเพื่อดูตำแหน่งในสาขา · คลิก header เพื่อเรียง</span>
+  </div>
   <div class="chart-card">
-    <div class="chart-head" style="padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:0;">
+    <div class="chart-head" style="padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:0; gap: 10px; flex-wrap: wrap;">
       <div class="chart-title"><span class="icon"><i class="bi bi-table"></i></span> รายละเอียดรายสาขา</div>
-      <input type="text" id="storeSearch" class="table-search" placeholder="🔍 ค้นหาสาขา..." oninput="renderTable()">
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+        <input type="text" id="storeSearch" class="table-search" placeholder="🔍 ค้นหาสาขา..." oninput="renderTable()">
+        <button class="action-btn success" onclick="exportStoreTableExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+      </div>
     </div>
     <div class="table-wrap">
-      <table class="stat-table">
+      <table class="stat-table" id="storeTable">
         <thead>
           <tr>
             <th width="40">#</th>
-            <th>Store</th>
-            <th>Subregion</th>
-            <th>Format</th>
-            <th class="text-end">Total Staff</th>
-            <th class="text-end">AEC</th>
-            <th class="text-end">พม่า</th>
-            <th class="text-end">ลาว</th>
-            <th class="text-end">ไทย(AEC)</th>
-            <th class="text-end">AEC %</th>
+            <th class="sortable" data-sort="store">Store <i class="bi bi-arrow-down-up sort-ico"></i></th>
+            <th class="sortable text-end" data-sort="storeTot">Total Staff <i class="bi bi-arrow-down-up sort-ico"></i></th>
+            <th class="sortable text-end" data-sort="total">AEC <i class="bi bi-arrow-down-up sort-ico"></i></th>
+            <th class="sortable text-end" data-sort="mm">พม่า <i class="bi bi-arrow-down-up sort-ico"></i></th>
+            <th class="sortable text-end" data-sort="la">ลาว <i class="bi bi-arrow-down-up sort-ico"></i></th>
+            <th class="sortable text-end" data-sort="th">ไทย(AEC) <i class="bi bi-arrow-down-up sort-ico"></i></th>
+            <th class="sortable text-end" data-sort="pct">AEC % <i class="bi bi-arrow-down-up sort-ico"></i></th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -423,6 +469,110 @@
   </div>
 
 </div><!-- /content -->
+
+<!-- ── MODALS ──────────────────────────────────── -->
+<!-- Store Detail Modal -->
+<div class="aec-modal-backdrop" id="storeModal" onclick="closeModal('storeModal', event)">
+  <div class="aec-modal" onclick="event.stopPropagation()">
+    <div class="aec-modal-head">
+      <h3 class="aec-modal-title">
+        <span class="icon"><i class="bi bi-shop"></i></span>
+        <span>
+          <span id="storeModalTitle">รายละเอียดสาขา</span>
+          <div class="aec-modal-sub" id="storeModalSub"></div>
+        </span>
+      </h3>
+      <div class="aec-modal-actions">
+        <button class="action-btn success" onclick="exportStoreModalExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+        <button class="aec-modal-close" onclick="closeModal('storeModal')">&times;</button>
+      </div>
+    </div>
+    <div class="aec-modal-body">
+      <div class="aec-stat-grid" id="storeModalStats"></div>
+      <div class="section-label" style="margin-bottom:8px;font-size:.65rem;">ตำแหน่ง (Department) ในสาขานี้</div>
+      <div class="table-wrap">
+        <table class="stat-table">
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th class="text-end">รวม</th>
+              <th class="text-end">พม่า</th>
+              <th class="text-end">ลาว</th>
+              <th class="text-end">ไทย(AEC)</th>
+              <th class="text-end">ไม่ระบุ</th>
+            </tr>
+          </thead>
+          <tbody id="storeModalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Turnover Modal -->
+<div class="aec-modal-backdrop" id="turnoverModal" onclick="closeModal('turnoverModal', event)">
+  <div class="aec-modal wide" onclick="event.stopPropagation()">
+    <div class="aec-modal-head">
+      <h3 class="aec-modal-title">
+        <span class="icon" style="background:#fee2e2;color:#b91c1c;"><i class="bi bi-graph-down-arrow"></i></span>
+        <span>
+          <span>Turnover Analysis (AEC)</span>
+          <div class="aec-modal-sub">รายละเอียดคนออกแต่ละเดือน — สัญชาติ × ตำแหน่ง × สาขา (YTD)</div>
+        </span>
+      </h3>
+      <div class="aec-modal-actions">
+        <button class="action-btn success" onclick="exportTurnoverExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+        <button class="aec-modal-close" onclick="closeModal('turnoverModal')">&times;</button>
+      </div>
+    </div>
+    <div class="aec-modal-body">
+      <div class="aec-stat-grid" id="turnoverStats"></div>
+      <div class="aec-tabs">
+        <button class="aec-tab active" data-tab="month" onclick="setTurnoverTab('month')">รายเดือน</button>
+        <button class="aec-tab" data-tab="dept" onclick="setTurnoverTab('dept')">รายตำแหน่ง</button>
+        <button class="aec-tab" data-tab="store" onclick="setTurnoverTab('store')">รายสาขา</button>
+        <button class="aec-tab" data-tab="detail" onclick="setTurnoverTab('detail')">รายชื่อทั้งหมด</button>
+      </div>
+      <div id="turnoverTabContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Onboarding Detail Modal -->
+<div class="aec-modal-backdrop" id="onboardModal" onclick="closeModal('onboardModal', event)">
+  <div class="aec-modal wide" onclick="event.stopPropagation()">
+    <div class="aec-modal-head">
+      <h3 class="aec-modal-title">
+        <span class="icon" style="background:#fffbeb;color:var(--amber);"><i class="bi bi-calendar-week"></i></span>
+        <span>
+          <span id="onboardModalTitle">รายละเอียด Onboarding</span>
+          <div class="aec-modal-sub" id="onboardModalSub"></div>
+        </span>
+      </h3>
+      <div class="aec-modal-actions">
+        <button class="action-btn success" onclick="exportOnboardExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+        <button class="aec-modal-close" onclick="closeModal('onboardModal')">&times;</button>
+      </div>
+    </div>
+    <div class="aec-modal-body">
+      <div class="section-label" style="margin-bottom:8px;font-size:.65rem;">ตำแหน่งที่กำลังจะเริ่มงาน</div>
+      <div class="table-wrap">
+        <table class="stat-table">
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th class="text-end">รวม</th>
+              <th class="text-end">พม่า</th>
+              <th class="text-end">ลาว</th>
+              <th class="text-end">ไทย(AEC)</th>
+            </tr>
+          </thead>
+          <tbody id="onboardModalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   const MOCK = { targets: [], applicants: [], staff: [], parttime: [] };
@@ -443,7 +593,10 @@
     natFilter: 'all',
     charts: {},
     webUrl: '',
-    computed: null
+    computed: null,
+    tableSort: { key: 'store', dir: 'asc' },  // default: storeNo ascending
+    turnoverTab: 'month',
+    modalCtx: null      // contextual data for open modal (for Excel export)
   };
 
   // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -554,6 +707,16 @@
 
     $('#lastUpdate').text('Data as of ' + new Date().toLocaleDateString('th-TH'));
     $('#loading').fadeOut(250);
+
+    // Wire up sortable headers (one-time)
+    document.querySelectorAll('#storeTable th.sortable').forEach(th => {
+      th.addEventListener('click', () => sortStoreTable(th.dataset.sort));
+    });
+    // ESC closes any open modal
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.querySelectorAll('.aec-modal-backdrop.show').forEach(m => m.classList.remove('show'));
+    });
+
     triggerFilter();
   }
 
@@ -599,6 +762,9 @@
     let mm = 0, la = 0, th = 0, unk = 0, hires = 0, resigns = 0;
     let total = 0; // independent counter — includes 'other' nationality
     let byStore = {}, byDept = {}, byRegion = {}, byMonth = {}, seenEmp = new Set();
+    let byStorePositions = {};  // storeNo -> { dept -> {mm,la,th,unk,total} }
+    let resignList = [];        // list of {empId, storeNo, storeName, dept, nk, termDate, reason}
+    let resignByMonth = {};     // mk -> { mm,la,th,unk,total }
 
     function passFilters(s) {
       let m = S.storeMeta[cs(s.storeNo)];
@@ -645,6 +811,13 @@
           let reg = m.subregion || '(unspecified)';
           if (!byRegion[reg]) byRegion[reg] = { mm: 0, la: 0, th: 0, unk: 0 };
           byRegion[reg][bk]++;
+
+          // byStorePositions — dept breakdown within each store
+          if (!byStorePositions[storeNo]) byStorePositions[storeNo] = {};
+          let bsp = byStorePositions[storeNo];
+          if (!bsp[dept]) bsp[dept] = { mm: 0, la: 0, th: 0, unk: 0, total: 0 };
+          bsp[dept][bk]++;
+          bsp[dept].total++;
         }
       }
 
@@ -660,6 +833,19 @@
         let mk = td.getFullYear() + '-' + String(td.getMonth()+1).padStart(2,'0');
         if (!byMonth[mk]) byMonth[mk] = { h: 0, r: 0 };
         byMonth[mk].r++;
+
+        // Detailed resign tracking for Turnover modal
+        let bk = NAT_SHORT[nk];
+        resignList.push({
+          empId, storeNo, storeName: m.name,
+          dept: cs(s.dept) || '(unspecified)',
+          nk, mk,
+          termDate: td,
+          reason: cs(s.resignReason || '')
+        });
+        if (!resignByMonth[mk]) resignByMonth[mk] = { mm: 0, la: 0, th: 0, unk: 0, total: 0 };
+        resignByMonth[mk][bk]++;
+        resignByMonth[mk].total++;
       }
     });
 
@@ -707,7 +893,7 @@
       if (td && td >= ytdPrev && td <= dPrev) pResigns++;
     });
 
-    S.computed = { mm, la, th, unk, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, waitList, waitByMonth, waitCount, dEnd, pMm, pLa, pTh, pTotal, pHires, pResigns };
+    S.computed = { mm, la, th, unk, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, waitList, waitByMonth, waitCount, dEnd, ytdStart, pMm, pLa, pTh, pTotal, pHires, pResigns, byStorePositions, resignList, resignByMonth };
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────
@@ -765,9 +951,12 @@
   function renderTrend() {
     killChart('trend');
     let c = S.computed;
-    let now = c.dEnd, months = [];
-    for (let i = 11; i >= 0; i--) { let d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')); }
-    let labels = months.map(m => { let [y,mo] = m.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1] + "'"+y.slice(2); });
+    let now = c.dEnd, curYear = now.getFullYear(), months = [];
+    // Show only months of the current year, from January up to snapshot month
+    for (let mo = 0; mo <= now.getMonth(); mo++) {
+      months.push(curYear + '-' + String(mo + 1).padStart(2, '0'));
+    }
+    let labels = months.map(m => { let [, mo] = m.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]; });
     let hiresData  = months.map(m => (c.byMonth[m] || {}).h || 0);
     let resignsData= months.map(m => (c.byMonth[m] || {}).r || 0);
     let ctx = document.getElementById('chartTrend').getContext('2d');
@@ -778,7 +967,13 @@
         { label: 'Resigns', data: resignsData, backgroundColor: '#E11D48', borderRadius: 4 }
       ]},
       options: { responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: true, position: 'top', labels: { font: { size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } }, datalabels: { display: false } },
+        onClick: (evt, items) => { if (items && items.length) openTurnoverModal(); },
+        onHover: (evt, items) => { evt.native.target.style.cursor = items.length ? 'pointer' : 'default'; },
+        plugins: {
+          legend: { display: true, position: 'top', labels: { font: { size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } },
+          datalabels: { display: false },
+          tooltip: { callbacks: { footer: () => 'คลิกเพื่อดู Turnover Analysis' } }
+        },
         scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { precision: 0, font: { size: 10 } } } }
       }
     });
@@ -788,19 +983,65 @@
     killChart('nat');
     let c = S.computed;
     let data = [], labels = [], colors = [];
-    if (c.mm) { data.push(c.mm); labels.push('พม่า'); colors.push(COLORS.myanmar); }
-    if (c.la) { data.push(c.la); labels.push('ลาว');  colors.push(COLORS.lao); }
-    if (c.th) { data.push(c.th); labels.push('ไทย');  colors.push(COLORS.thai); }
+    if (c.mm)  { data.push(c.mm);  labels.push('พม่า');  colors.push(COLORS.myanmar); }
+    if (c.la)  { data.push(c.la);  labels.push('ลาว');   colors.push(COLORS.lao); }
+    if (c.th)  { data.push(c.th);  labels.push('ไทย');   colors.push(COLORS.thai); }
+    if (c.unk) { data.push(c.unk); labels.push('ไม่ระบุ'); colors.push(COLORS.other); }
+    let totalSum = data.reduce((a,b)=>a+b, 0);
     let ctx = document.getElementById('chartNat').getContext('2d');
     S.charts.nat = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 3, borderColor: '#fff', hoverOffset: 4 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '72%', layout: { padding: 8 },
         plugins: {
-          legend: { display: true, position: 'bottom', labels: { font: { size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } },
-          datalabels: { display: true, color: '#fff', font: { size: 12, weight: 800 }, formatter: (v, ctx) => { let t = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0); return v > 0 ? v + '\n(' + ((v/t)*100).toFixed(0) + '%)' : ''; } }
+          legend: { display: true, position: 'bottom', labels: {
+            font: { size: 11, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8, padding: 10,
+            generateLabels: ch => {
+              let ds = ch.data.datasets[0];
+              return ch.data.labels.map((lbl, i) => {
+                let v = ds.data[i] || 0;
+                let p = totalSum > 0 ? ((v / totalSum) * 100).toFixed(1) : 0;
+                return {
+                  text: `${lbl} · ${v.toLocaleString()} (${p}%)`,
+                  fillStyle: ds.backgroundColor[i],
+                  strokeStyle: ds.backgroundColor[i],
+                  pointStyle: 'circle',
+                  index: i
+                };
+              });
+            }
+          }},
+          datalabels: {
+            display: ctx2 => {
+              let v = ctx2.dataset.data[ctx2.dataIndex] || 0;
+              return totalSum > 0 && (v / totalSum) >= 0.06;
+            },
+            color: '#fff', font: { size: 11, weight: 800 },
+            formatter: (v) => totalSum > 0 ? ((v / totalSum) * 100).toFixed(0) + '%' : ''
+          },
+          tooltip: { callbacks: { label: ctx2 => {
+            let v = ctx2.parsed || 0;
+            let p = totalSum > 0 ? ((v / totalSum) * 100).toFixed(1) : 0;
+            return ` ${ctx2.label}: ${v.toLocaleString()} (${p}%)`;
+          }}}
         }
-      }
+      },
+      plugins: [{
+        id: 'nat-center',
+        afterDraw(ch) {
+          let { ctx, chartArea: { left, right, top, bottom } } = ch;
+          let cx = (left + right) / 2, cy = (top + bottom) / 2;
+          ctx.save();
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#0F172A';
+          ctx.font = '800 1.5rem Inter, sans-serif';
+          ctx.fillText(totalSum.toLocaleString(), cx, cy - 6);
+          ctx.fillStyle = '#64748B';
+          ctx.font = '600 .65rem Inter, sans-serif';
+          ctx.fillText('TOTAL AEC', cx, cy + 14);
+          ctx.restore();
+        }
+      }]
     });
   }
 
@@ -890,7 +1131,7 @@
       let total = v.mm + v.la + v.th + (v.unk || 0);
       let storeTot = c.storeTotal[k] || 0;
       return {
-        k, name: m.name, format: m.format, sub: m.subregion,
+        k, store: k, name: m.name, format: m.format, sub: m.subregion,
         mm: v.mm, la: v.la, th: v.th, unk: v.unk || 0,
         total, storeTot, pct: storeTot > 0 ? (total / storeTot * 100) : 0
       };
@@ -901,30 +1142,33 @@
     if (selSub !== 'all') arr = arr.filter(x => x.sub === selSub);
     if (search)           arr = arr.filter(x => x.k.toLowerCase().includes(search) || (x.name || '').toLowerCase().includes(search));
 
-    // Sort: stores with AEC first (by total desc), then stores without AEC (by storeNo asc)
+    // Apply user-chosen sort
+    let { key, dir } = S.tableSort;
+    let mult = dir === 'asc' ? 1 : -1;
     arr.sort((a, b) => {
-      if (b.total !== a.total) return b.total - a.total;
-      return a.k.localeCompare(b.k, undefined, { numeric: true });
+      if (key === 'store') return a.k.localeCompare(b.k, undefined, { numeric: true }) * mult;
+      let av = a[key] || 0, bv = b[key] || 0;
+      if (av === bv) return a.k.localeCompare(b.k, undefined, { numeric: true });
+      return (av - bv) * mult;
+    });
+
+    // Update sort indicators on headers
+    document.querySelectorAll('#storeTable th.sortable').forEach(th => {
+      let k = th.dataset.sort;
+      th.classList.toggle('active', k === key);
+      let ico = th.querySelector('.sort-ico');
+      if (ico) ico.className = 'bi sort-ico ' + (k === key ? (dir === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up');
     });
 
     let maxPct = Math.max(...arr.map(x => x.pct), 0.01);
     let html = '';
-    let rank = 0;
-    arr.forEach(x => {
+    arr.forEach((x, i) => {
       let zero = x.total === 0;
-      let rowStyle = zero ? ' style="opacity:.55;"' : '';
-      let rankCell;
-      if (zero) {
-        rankCell = '<span style="font-size:.7rem;color:var(--text-muted);">—</span>';
-      } else {
-        rank++;
-        rankCell = `<span class="${rank === 1 ? 'rank-num gold' : 'rank-num'}">${rank}</span>`;
-      }
-      html += `<tr${rowStyle}>
-        <td>${rankCell}</td>
+      let rowClass = 'clickable' + (zero ? '' : '');
+      let rowStyle = zero ? ' style="opacity:.6;"' : '';
+      html += `<tr class="${rowClass}"${rowStyle} onclick="openStoreModal('${x.k.replace(/'/g, "\\'")}')">
+        <td><span style="font-size:.72rem;color:var(--text-muted);font-weight:600;">${i + 1}</span></td>
         <td><strong>${x.k}</strong><span style="color:var(--text-muted);font-size:.78rem;margin-left:6px;">${x.name || ''}</span></td>
-        <td style="font-size:.78rem;color:var(--text-muted);">${x.sub || '—'}</td>
-        <td style="font-size:.78rem;color:var(--text-muted);">${x.format || '—'}</td>
         <td class="num-cell">${fmt(x.storeTot)}</td>
         <td class="num-cell">${zero ? '<span style="color:var(--text-muted);">0</span>' : '<strong>'+fmt(x.total)+'</strong>'}</td>
         <td class="num-cell">${x.mm > 0 ? '<span class="nat-chip mm">'+x.mm+'</span>' : '—'}</td>
@@ -936,8 +1180,20 @@
         </td>
       </tr>`;
     });
-    if (!html) html = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted);font-size:.85rem;">ไม่พบข้อมูล</td></tr>';
+    if (!html) html = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);font-size:.85rem;">ไม่พบข้อมูล</td></tr>';
     document.getElementById('tableBody').innerHTML = html;
+    S._tableArr = arr;  // cache for Excel export
+  }
+
+  function sortStoreTable(key) {
+    if (S.tableSort.key === key) {
+      S.tableSort.dir = S.tableSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      S.tableSort.key = key;
+      // sensible default direction per column
+      S.tableSort.dir = (key === 'store') ? 'asc' : 'desc';
+    }
+    renderTable();
   }
 
   function renderWaiting() {
@@ -967,14 +1223,42 @@
       { label: 'ไม่ระบุ', data: months.map(m => c.waitByMonth[m].unk || 0), backgroundColor: '#94A3B8' }
     ].filter(ds => ds.data.some(v => v > 0));
 
+    // Pre-compute top dept per month for tooltips
+    let topDeptByMonth = {};
+    months.forEach(m => {
+      let deptCounts = {};
+      c.waitList.forEach(x => {
+        let mk = x.joinDate.getFullYear() + '-' + String(x.joinDate.getMonth()+1).padStart(2,'0');
+        if (mk !== m) return;
+        let d = x.dept || '(unspecified)';
+        deptCounts[d] = (deptCounts[d] || 0) + 1;
+      });
+      topDeptByMonth[m] = Object.entries(deptCounts).sort((a,b) => b[1]-a[1]).slice(0, 3);
+    });
+
     let ctx = document.getElementById('chartWait').getContext('2d');
     S.charts.wait = new Chart(ctx, {
       type: 'bar',
       data: { labels, datasets: allDatasets },
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: (evt, items) => {
+          if (!items || !items.length) return;
+          openOnboardModalForMonth(months[items[0].index]);
+        },
+        onHover: (evt, items) => { evt.native.target.style.cursor = items.length ? 'pointer' : 'default'; },
         plugins: {
           legend: { display: true, position: 'top', labels: { font: { size: 10, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } },
+          tooltip: { callbacks: {
+            afterBody: items => {
+              if (!items || !items.length) return '';
+              let m = months[items[0].dataIndex];
+              let top = topDeptByMonth[m] || [];
+              if (!top.length) return '';
+              return ['', 'ตำแหน่งหลัก:'].concat(top.map(([d, n]) => '  • ' + d + ': ' + n));
+            },
+            footer: () => 'คลิกเพื่อดูรายตำแหน่งทั้งหมด'
+          }},
           datalabels: { display: true, anchor: 'end', align: 'end', color: '#334155', font: { size: 10, weight: 700 },
             formatter: (v, ctx2) => {
               let sums = ctx2.chart.data.datasets.map(ds => ds.data[ctx2.dataIndex]);
@@ -1083,6 +1367,367 @@
 
   function goMain() {
     window.top.location.href = S.webUrl || window.top.location.href.split('?')[0];
+  }
+
+  // ── MODAL HELPERS ────────────────────────────────────────────────────────
+  function openModal(id) {
+    let el = document.getElementById(id);
+    if (el) el.classList.add('show');
+  }
+  function closeModal(id, evt) {
+    // when called from backdrop click, only close if clicking backdrop itself
+    if (evt && evt.target && evt.target.id !== id) return;
+    let el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  }
+
+  // ── STORE DETAIL MODAL ───────────────────────────────────────────────────
+  function openStoreModal(storeNo) {
+    let c = S.computed;
+    let m = S.storeMeta[storeNo] || { name: '', format: '', subregion: '' };
+    let bs = c.byStore[storeNo] || { mm: 0, la: 0, th: 0, unk: 0 };
+    let positions = c.byStorePositions[storeNo] || {};
+    let aec = bs.mm + bs.la + bs.th + (bs.unk || 0);
+    let storeTot = c.storeTotal[storeNo] || 0;
+    let pctAec = storeTot > 0 ? (aec / storeTot * 100).toFixed(1) : '0.0';
+
+    document.getElementById('storeModalTitle').textContent = storeNo + ' · ' + (m.name || '-');
+    document.getElementById('storeModalSub').textContent =
+      [m.subregion, m.format].filter(Boolean).join(' · ') || 'ไม่ระบุ subregion / format';
+
+    let stats = [
+      { lbl: 'Total Staff', val: fmt(storeTot) },
+      { lbl: 'AEC Active',  val: fmt(aec) },
+      { lbl: 'AEC %',       val: pctAec + '%' },
+      { lbl: 'พม่า',         val: fmt(bs.mm), color: 'var(--myanmar)' },
+      { lbl: 'ลาว',          val: fmt(bs.la), color: 'var(--lao)' },
+      { lbl: 'ไทย(AEC)',     val: fmt(bs.th), color: 'var(--thai)' }
+    ];
+    document.getElementById('storeModalStats').innerHTML = stats.map(s =>
+      `<div class="aec-stat">
+        <div class="aec-stat-label">${s.lbl}</div>
+        <div class="aec-stat-value" style="${s.color ? 'color:' + s.color : ''}">${s.val}</div>
+      </div>`).join('');
+
+    // Position breakdown — sort by total desc
+    let posArr = Object.entries(positions)
+      .map(([dept, v]) => ({ dept, ...v }))
+      .sort((a, b) => b.total - a.total);
+    let body = posArr.map(p => `<tr>
+      <td>${p.dept}</td>
+      <td class="num-cell"><strong>${fmt(p.total)}</strong></td>
+      <td class="num-cell">${p.mm > 0 ? '<span class="nat-chip mm">'+p.mm+'</span>' : '—'}</td>
+      <td class="num-cell">${p.la > 0 ? '<span class="nat-chip la">'+p.la+'</span>' : '—'}</td>
+      <td class="num-cell">${p.th > 0 ? '<span class="nat-chip th">'+p.th+'</span>' : '—'}</td>
+      <td class="num-cell">${p.unk > 0 ? '<span class="nat-chip" style="background:#f1f5f9;color:#64748b;">'+p.unk+'</span>' : '—'}</td>
+    </tr>`).join('');
+    if (!body) body = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">ไม่มีพนักงาน AEC ในสาขานี้</td></tr>';
+    document.getElementById('storeModalBody').innerHTML = body;
+
+    S.modalCtx = { type: 'store', storeNo, storeName: m.name, positions: posArr, stats: { storeTot, aec, pctAec, ...bs } };
+    openModal('storeModal');
+  }
+
+  // ── TURNOVER MODAL ───────────────────────────────────────────────────────
+  function openTurnoverModal() {
+    let c = S.computed;
+    let total = c.resignList.length;
+
+    // Aggregates
+    let agg = { mm: 0, la: 0, th: 0, unk: 0 };
+    let byDept = {}, byStore = {};
+    c.resignList.forEach(r => {
+      let bk = NAT_SHORT[r.nk];
+      agg[bk]++;
+      if (!byDept[r.dept]) byDept[r.dept] = { mm: 0, la: 0, th: 0, unk: 0, total: 0 };
+      byDept[r.dept][bk]++; byDept[r.dept].total++;
+      let sKey = r.storeNo + '|' + r.storeName;
+      if (!byStore[sKey]) byStore[sKey] = { storeNo: r.storeNo, storeName: r.storeName, mm: 0, la: 0, th: 0, unk: 0, total: 0 };
+      byStore[sKey][bk]++; byStore[sKey].total++;
+    });
+
+    let stats = [
+      { lbl: 'Resigns YTD', val: fmt(total) },
+      { lbl: 'พม่า',  val: fmt(agg.mm), color: 'var(--myanmar)' },
+      { lbl: 'ลาว',   val: fmt(agg.la), color: 'var(--lao)' },
+      { lbl: 'ไทย',   val: fmt(agg.th), color: 'var(--thai)' },
+      { lbl: 'ไม่ระบุ', val: fmt(agg.unk), color: 'var(--text-muted)' }
+    ];
+    document.getElementById('turnoverStats').innerHTML = stats.map(s =>
+      `<div class="aec-stat">
+        <div class="aec-stat-label">${s.lbl}</div>
+        <div class="aec-stat-value" style="${s.color ? 'color:' + s.color : ''}">${s.val}</div>
+      </div>`).join('');
+
+    S.modalCtx = { type: 'turnover', resignList: c.resignList, resignByMonth: c.resignByMonth, byDept, byStore };
+    setTurnoverTab(S.turnoverTab || 'month');
+    openModal('turnoverModal');
+  }
+
+  function setTurnoverTab(tab) {
+    S.turnoverTab = tab;
+    document.querySelectorAll('#turnoverModal .aec-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    let ctx = S.modalCtx;
+    if (!ctx) return;
+    let html = '';
+    const MONTH_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const natChip = { myanmar: '<span class="nat-chip mm">พม่า</span>', lao: '<span class="nat-chip la">ลาว</span>', thai: '<span class="nat-chip th">ไทย</span>', other: '<span class="nat-chip" style="background:#f1f5f9;color:#64748b;">ไม่ระบุ</span>' };
+
+    if (tab === 'month') {
+      let keys = Object.keys(ctx.resignByMonth).sort();
+      html = `<div class="table-wrap"><table class="stat-table"><thead><tr>
+        <th>เดือน</th><th class="text-end">รวม</th><th class="text-end">พม่า</th><th class="text-end">ลาว</th><th class="text-end">ไทย</th><th class="text-end">ไม่ระบุ</th>
+      </tr></thead><tbody>`;
+      keys.forEach(k => {
+        let v = ctx.resignByMonth[k];
+        let [y, mo] = k.split('-');
+        html += `<tr>
+          <td><strong>${MONTH_TH[parseInt(mo)-1]} ${y}</strong></td>
+          <td class="num-cell"><strong>${fmt(v.total)}</strong></td>
+          <td class="num-cell">${v.mm > 0 ? '<span class="nat-chip mm">'+v.mm+'</span>' : '—'}</td>
+          <td class="num-cell">${v.la > 0 ? '<span class="nat-chip la">'+v.la+'</span>' : '—'}</td>
+          <td class="num-cell">${v.th > 0 ? '<span class="nat-chip th">'+v.th+'</span>' : '—'}</td>
+          <td class="num-cell">${v.unk > 0 ? '<span class="nat-chip" style="background:#f1f5f9;color:#64748b;">'+v.unk+'</span>' : '—'}</td>
+        </tr>`;
+      });
+      if (!keys.length) html += `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">ไม่มีข้อมูลคนออกในช่วงนี้</td></tr>`;
+      html += `</tbody></table></div>`;
+    } else if (tab === 'dept') {
+      let arr = Object.entries(ctx.byDept).map(([dept, v]) => ({ dept, ...v })).sort((a,b) => b.total - a.total);
+      html = `<div class="table-wrap"><table class="stat-table"><thead><tr>
+        <th>Department</th><th class="text-end">รวม</th><th class="text-end">พม่า</th><th class="text-end">ลาว</th><th class="text-end">ไทย</th><th class="text-end">ไม่ระบุ</th>
+      </tr></thead><tbody>`;
+      arr.forEach(v => {
+        html += `<tr>
+          <td>${v.dept}</td>
+          <td class="num-cell"><strong>${fmt(v.total)}</strong></td>
+          <td class="num-cell">${v.mm > 0 ? '<span class="nat-chip mm">'+v.mm+'</span>' : '—'}</td>
+          <td class="num-cell">${v.la > 0 ? '<span class="nat-chip la">'+v.la+'</span>' : '—'}</td>
+          <td class="num-cell">${v.th > 0 ? '<span class="nat-chip th">'+v.th+'</span>' : '—'}</td>
+          <td class="num-cell">${v.unk > 0 ? '<span class="nat-chip" style="background:#f1f5f9;color:#64748b;">'+v.unk+'</span>' : '—'}</td>
+        </tr>`;
+      });
+      if (!arr.length) html += `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">—</td></tr>`;
+      html += `</tbody></table></div>`;
+    } else if (tab === 'store') {
+      let arr = Object.values(ctx.byStore).sort((a,b) => b.total - a.total);
+      html = `<div class="table-wrap"><table class="stat-table"><thead><tr>
+        <th>Store</th><th class="text-end">รวม</th><th class="text-end">พม่า</th><th class="text-end">ลาว</th><th class="text-end">ไทย</th><th class="text-end">ไม่ระบุ</th>
+      </tr></thead><tbody>`;
+      arr.forEach(v => {
+        html += `<tr>
+          <td><strong>${v.storeNo}</strong> <span style="color:var(--text-muted);font-size:.78rem;">${v.storeName || ''}</span></td>
+          <td class="num-cell"><strong>${fmt(v.total)}</strong></td>
+          <td class="num-cell">${v.mm > 0 ? '<span class="nat-chip mm">'+v.mm+'</span>' : '—'}</td>
+          <td class="num-cell">${v.la > 0 ? '<span class="nat-chip la">'+v.la+'</span>' : '—'}</td>
+          <td class="num-cell">${v.th > 0 ? '<span class="nat-chip th">'+v.th+'</span>' : '—'}</td>
+          <td class="num-cell">${v.unk > 0 ? '<span class="nat-chip" style="background:#f1f5f9;color:#64748b;">'+v.unk+'</span>' : '—'}</td>
+        </tr>`;
+      });
+      if (!arr.length) html += `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">—</td></tr>`;
+      html += `</tbody></table></div>`;
+    } else {
+      // detail — full list
+      let arr = [...ctx.resignList].sort((a, b) => b.termDate - a.termDate);
+      html = `<div class="table-wrap" style="max-height:55vh;"><table class="stat-table"><thead><tr>
+        <th>วันที่ออก</th><th>Store</th><th>Department</th><th>สัญชาติ</th><th>เหตุผล</th>
+      </tr></thead><tbody>`;
+      arr.forEach(r => {
+        let d = r.termDate;
+        let ds = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+        html += `<tr>
+          <td>${ds}</td>
+          <td><strong>${r.storeNo}</strong> <span style="color:var(--text-muted);font-size:.78rem;">${r.storeName || ''}</span></td>
+          <td>${r.dept}</td>
+          <td>${natChip[r.nk] || natChip.other}</td>
+          <td style="font-size:.78rem;color:var(--text-muted);">${r.reason || '—'}</td>
+        </tr>`;
+      });
+      if (!arr.length) html += `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">ไม่มีข้อมูล</td></tr>`;
+      html += `</tbody></table></div>`;
+    }
+    document.getElementById('turnoverTabContent').innerHTML = html;
+  }
+
+  // ── ONBOARD MODAL ────────────────────────────────────────────────────────
+  function openOnboardModalForMonth(mkey) {
+    let c = S.computed;
+    let list = c.waitList.filter(x => {
+      let jd = x.joinDate;
+      let k = jd.getFullYear() + '-' + String(jd.getMonth()+1).padStart(2,'0');
+      return k === mkey;
+    });
+    // Group by dept
+    let byDept = {};
+    list.forEach(x => {
+      let d = x.dept || '(unspecified)';
+      let bk = NAT_SHORT[x.nk];
+      if (!byDept[d]) byDept[d] = { mm: 0, la: 0, th: 0, unk: 0, total: 0 };
+      byDept[d][bk]++; byDept[d].total++;
+    });
+    let [y, mo] = mkey.split('-');
+    const MONTH_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    document.getElementById('onboardModalTitle').textContent = 'Onboarding · ' + MONTH_TH[parseInt(mo)-1] + ' ' + y;
+    document.getElementById('onboardModalSub').textContent = list.length + ' คน · ' + Object.keys(byDept).length + ' ตำแหน่ง';
+
+    let arr = Object.entries(byDept).map(([d, v]) => ({ dept: d, ...v })).sort((a,b) => b.total - a.total);
+    let html = arr.map(p => `<tr>
+      <td>${p.dept}</td>
+      <td class="num-cell"><strong>${fmt(p.total)}</strong></td>
+      <td class="num-cell">${p.mm > 0 ? '<span class="nat-chip mm">'+p.mm+'</span>' : '—'}</td>
+      <td class="num-cell">${p.la > 0 ? '<span class="nat-chip la">'+p.la+'</span>' : '—'}</td>
+      <td class="num-cell">${p.th > 0 ? '<span class="nat-chip th">'+p.th+'</span>' : '—'}</td>
+    </tr>`).join('');
+    if (!html) html = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">—</td></tr>';
+    document.getElementById('onboardModalBody').innerHTML = html;
+
+    S.modalCtx = { type: 'onboard', monthKey: mkey, list, byDept: arr };
+    openModal('onboardModal');
+  }
+
+  // ── EXCEL EXPORT ─────────────────────────────────────────────────────────
+  function aoaToSheet(aoa) { return XLSX.utils.aoa_to_sheet(aoa); }
+  function downloadWb(wb, filename) { XLSX.writeFile(wb, filename); }
+
+  function exportStoreTableExcel() {
+    let arr = S._tableArr || [];
+    let aoa = [['#', 'Store No', 'Store Name', 'Total Staff', 'AEC', 'พม่า', 'ลาว', 'ไทย(AEC)', 'AEC %']];
+    arr.forEach((x, i) => aoa.push([i+1, x.k, x.name, x.storeTot, x.total, x.mm, x.la, x.th, +x.pct.toFixed(2)]));
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa), 'Store Detail');
+    downloadWb(wb, 'AEC_Store_Detail_' + tsString() + '.xlsx');
+  }
+
+  function exportStoreModalExcel() {
+    let ctx = S.modalCtx;
+    if (!ctx || ctx.type !== 'store') return;
+    let aoa = [['Department', 'รวม', 'พม่า', 'ลาว', 'ไทย(AEC)', 'ไม่ระบุ']];
+    ctx.positions.forEach(p => aoa.push([p.dept, p.total, p.mm, p.la, p.th, p.unk]));
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa), 'Positions');
+    downloadWb(wb, 'AEC_Store_' + ctx.storeNo + '_' + tsString() + '.xlsx');
+  }
+
+  function exportTurnoverExcel() {
+    let ctx = S.modalCtx;
+    if (!ctx || ctx.type !== 'turnover') return;
+    let wb = XLSX.utils.book_new();
+    const MONTH_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+    // Sheet 1: by month
+    let aoa1 = [['เดือน','รวม','พม่า','ลาว','ไทย','ไม่ระบุ']];
+    Object.keys(ctx.resignByMonth).sort().forEach(k => {
+      let v = ctx.resignByMonth[k]; let [y, mo] = k.split('-');
+      aoa1.push([MONTH_TH[parseInt(mo)-1] + ' ' + y, v.total, v.mm, v.la, v.th, v.unk]);
+    });
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa1), 'By Month');
+
+    // Sheet 2: by dept
+    let aoa2 = [['Department','รวม','พม่า','ลาว','ไทย','ไม่ระบุ']];
+    Object.entries(ctx.byDept).sort((a,b) => b[1].total - a[1].total).forEach(([dept, v]) =>
+      aoa2.push([dept, v.total, v.mm, v.la, v.th, v.unk]));
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa2), 'By Department');
+
+    // Sheet 3: by store
+    let aoa3 = [['Store No','Store Name','รวม','พม่า','ลาว','ไทย','ไม่ระบุ']];
+    Object.values(ctx.byStore).sort((a,b) => b.total - a.total).forEach(v =>
+      aoa3.push([v.storeNo, v.storeName, v.total, v.mm, v.la, v.th, v.unk]));
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa3), 'By Store');
+
+    // Sheet 4: detail
+    let aoa4 = [['วันที่ออก','Store No','Store Name','Department','สัญชาติ','Emp ID','เหตุผล']];
+    const NAT_LBL = { myanmar: 'พม่า', lao: 'ลาว', thai: 'ไทย', other: 'ไม่ระบุ' };
+    [...ctx.resignList].sort((a,b) => b.termDate - a.termDate).forEach(r => {
+      let d = r.termDate;
+      aoa4.push([d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(), r.storeNo, r.storeName, r.dept, NAT_LBL[r.nk] || '-', r.empId, r.reason]);
+    });
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa4), 'Detail');
+
+    downloadWb(wb, 'AEC_Turnover_YTD_' + tsString() + '.xlsx');
+  }
+
+  function exportOnboardExcel() {
+    let ctx = S.modalCtx;
+    if (!ctx || ctx.type !== 'onboard') return;
+    let wb = XLSX.utils.book_new();
+    let aoa = [['Department','รวม','พม่า','ลาว','ไทย(AEC)']];
+    ctx.byDept.forEach(p => aoa.push([p.dept, p.total, p.mm, p.la, p.th]));
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa), 'By Position');
+
+    let aoa2 = [['Store No','Store Name','Department','สัญชาติ','Join Date']];
+    const NAT_LBL = { myanmar: 'พม่า', lao: 'ลาว', thai: 'ไทย', other: 'ไม่ระบุ' };
+    ctx.list.forEach(x => {
+      let d = x.joinDate;
+      aoa2.push([x.storeNo, x.storeName, x.dept, NAT_LBL[x.nk] || '-', d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()]);
+    });
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(aoa2), 'Detail');
+    downloadWb(wb, 'AEC_Onboarding_' + ctx.monthKey + '_' + tsString() + '.xlsx');
+  }
+
+  function exportAllExcel() {
+    let c = S.computed;
+    if (!c) { alert('ยังไม่มีข้อมูล'); return; }
+    let wb = XLSX.utils.book_new();
+    const MONTH_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+    // KPI summary
+    let kpi = [
+      ['Metric', 'Value'],
+      ['Total AEC Active', c.total],
+      ['Myanmar', c.mm], ['Lao', c.la], ['Thai (AEC)', c.th], ['Unknown', c.unk],
+      ['Total All Staff', c.totalAll],
+      ['Hires YTD', c.hires],
+      ['Resigns YTD', c.resigns],
+      ['Waiting to Onboard', c.waitCount]
+    ];
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(kpi), 'Summary');
+
+    // Store detail
+    let s1 = [['Store No', 'Store Name', 'Subregion', 'Format', 'Total Staff', 'AEC', 'พม่า', 'ลาว', 'ไทย(AEC)', 'ไม่ระบุ', 'AEC %']];
+    Object.entries(S.storeMeta).map(([k, m]) => {
+      let v = c.byStore[k] || { mm: 0, la: 0, th: 0, unk: 0 };
+      let total = v.mm + v.la + v.th + (v.unk || 0);
+      let storeTot = c.storeTotal[k] || 0;
+      return { k, name: m.name, subregion: m.subregion, format: m.format, storeTot, total, mm: v.mm, la: v.la, th: v.th, unk: v.unk || 0,
+               pct: storeTot > 0 ? (total / storeTot * 100) : 0 };
+    }).sort((a, b) => a.k.localeCompare(b.k, undefined, { numeric: true }))
+      .forEach(x => s1.push([x.k, x.name, x.subregion, x.format, x.storeTot, x.total, x.mm, x.la, x.th, x.unk, +x.pct.toFixed(2)]));
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(s1), 'Store Detail');
+
+    // Positions per store
+    let s2 = [['Store No', 'Store Name', 'Department', 'รวม', 'พม่า', 'ลาว', 'ไทย', 'ไม่ระบุ']];
+    Object.keys(c.byStorePositions).sort((a,b) => a.localeCompare(b, undefined, { numeric: true })).forEach(sNo => {
+      let m = S.storeMeta[sNo] || { name: '' };
+      Object.entries(c.byStorePositions[sNo]).sort((a,b) => b[1].total - a[1].total).forEach(([dept, v]) => {
+        s2.push([sNo, m.name, dept, v.total, v.mm, v.la, v.th, v.unk]);
+      });
+    });
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(s2), 'Positions');
+
+    // Turnover YTD
+    let s3 = [['วันที่ออก','Store No','Store Name','Department','สัญชาติ','Emp ID','เหตุผล']];
+    const NAT_LBL = { myanmar: 'พม่า', lao: 'ลาว', thai: 'ไทย', other: 'ไม่ระบุ' };
+    [...c.resignList].sort((a,b) => b.termDate - a.termDate).forEach(r => {
+      let d = r.termDate;
+      s3.push([d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(), r.storeNo, r.storeName, r.dept, NAT_LBL[r.nk] || '-', r.empId, r.reason]);
+    });
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(s3), 'Turnover YTD');
+
+    // Waiting to onboard
+    let s4 = [['Store No','Store Name','Department','สัญชาติ','Join Date']];
+    [...c.waitList].sort((a, b) => a.joinDate - b.joinDate).forEach(x => {
+      let d = x.joinDate;
+      s4.push([x.storeNo, x.storeName, x.dept, NAT_LBL[x.nk] || '-', d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()]);
+    });
+    XLSX.utils.book_append_sheet(wb, aoaToSheet(s4), 'Waiting to Onboard');
+
+    downloadWb(wb, 'AEC_Dashboard_' + tsString() + '.xlsx');
+  }
+
+  function tsString() {
+    let d = new Date();
+    return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '_' +
+           String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0');
   }
 </script>
 </body>
