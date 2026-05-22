@@ -379,11 +379,16 @@
   }
 
   function isActiveAt(s, dEnd) {
-    let jd = parseDt(s.joinDate), td = parseDt(s.termDate);
-    let statusActive = cs(s.status).toLowerCase().includes('active') && !cs(s.status).toLowerCase().includes('inactive');
-    let started = jd ? jd <= dEnd : statusActive;
-    let notTerm  = !td || td > dEnd;
-    return started && notTerm;
+    let td = parseDt(s.termDate);
+    // HR_Status is the source of truth for active headcount.
+    // Employees pre-hired (joinDate in the future) are still Active in the system.
+    // Only use joinDate for historical queries when status is not explicitly Active.
+    let statusActive = cs(s.status).toLowerCase() === 'active';
+    let notTerm = !td || td > dEnd;
+    if (statusActive) return notTerm;
+    // Fallback: date-based logic for records without explicit Active status
+    let jd = parseDt(s.joinDate);
+    return !!(jd && jd <= dEnd && notTerm);
   }
 
   function getNatKey(nat) {
@@ -472,7 +477,8 @@
       storeTotal[k] = (storeTotal[k] || 0) + 1;
     });
 
-    let mm = 0, la = 0, th = 0, hires = 0, resigns = 0;
+    let mm = 0, la = 0, th = 0, unk = 0, hires = 0, resigns = 0;
+    let total = 0; // independent counter — includes 'other' nationality
     let byStore = {}, byDept = {}, byRegion = {}, byMonth = {}, seenEmp = new Set();
 
     function passFilters(s) {
@@ -498,9 +504,11 @@
       // Active count
       if (isActiveAt(s, dEnd)) {
         if (!empId || !seenEmp.has(empId)) {
+          total++; // always count, regardless of nationality
           if (nk === 'myanmar') mm++;
           else if (nk === 'lao') la++;
           else if (nk === 'thai') th++;
+          else unk++;
           if (empId) seenEmp.add(empId);
 
           // byStore
@@ -509,13 +517,13 @@
 
           // byDept
           let dept = cs(s.dept) || '(unspecified)';
-          if (!byDept[dept]) byDept[dept] = { mm: 0, la: 0, th: 0 };
-          byDept[dept][nk === 'other' ? 'mm' : nk]++;
+          if (!byDept[dept]) byDept[dept] = { mm: 0, la: 0, th: 0, unk: 0 };
+          byDept[dept][nk === 'other' ? 'unk' : nk]++;
 
           // byRegion
           let reg = m.subregion || '(unspecified)';
-          if (!byRegion[reg]) byRegion[reg] = { mm: 0, la: 0, th: 0 };
-          byRegion[reg][nk === 'other' ? 'mm' : nk]++;
+          if (!byRegion[reg]) byRegion[reg] = { mm: 0, la: 0, th: 0, unk: 0 };
+          byRegion[reg][nk === 'other' ? 'unk' : nk]++;
         }
       }
 
@@ -534,10 +542,9 @@
       }
     });
 
-    let total = mm + la + th;
     let totalAll = Object.values(storeTotal).reduce((a, b) => a + b, 0);
 
-    S.computed = { mm, la, th, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, dEnd };
+    S.computed = { mm, la, th, unk, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, dEnd };
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────
