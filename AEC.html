@@ -466,7 +466,12 @@
       let dt = new Date(y, m - 1, d);
       return isNaN(dt) ? null : dt;
     }
-    if (/^\d{4}-\d{2}-\d{2}/.test(s)) { let dt = new Date(s.slice(0, 10)); return isNaN(dt) ? null : dt; }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      let [y, mo, d] = s.slice(0, 10).split('-').map(Number);
+      if (y >= 2500) y -= 543;
+      let dt = new Date(y, mo - 1, d);
+      return isNaN(dt) ? null : dt;
+    }
     return null;
   }
 
@@ -495,6 +500,9 @@
     if (n === 'thai' || n === 'ไทย') return 'thai';
     return 'other';
   }
+
+  // Map long nat keys to short bucket keys used by byStore/byDept/byRegion/waitByMonth
+  const NAT_SHORT = { myanmar: 'mm', lao: 'la', thai: 'th', other: 'unk' };
 
   // ── INIT ──────────────────────────────────────────────────────────────────
   $(document).ready(function() {
@@ -622,19 +630,21 @@
           else unk++;
           if (empId) seenEmp.add(empId);
 
+          let bk = NAT_SHORT[nk];
+
           // byStore
           if (!byStore[storeNo]) byStore[storeNo] = { name: m.name, format: m.format, sub: m.subregion, mm: 0, la: 0, th: 0, unk: 0 };
-          byStore[storeNo][nk === 'other' ? 'unk' : nk]++;
+          byStore[storeNo][bk]++;
 
           // byDept
           let dept = cs(s.dept) || '(unspecified)';
           if (!byDept[dept]) byDept[dept] = { mm: 0, la: 0, th: 0, unk: 0 };
-          byDept[dept][nk === 'other' ? 'unk' : nk]++;
+          byDept[dept][bk]++;
 
           // byRegion
           let reg = m.subregion || '(unspecified)';
           if (!byRegion[reg]) byRegion[reg] = { mm: 0, la: 0, th: 0, unk: 0 };
-          byRegion[reg][nk === 'other' ? 'unk' : nk]++;
+          byRegion[reg][bk]++;
         }
       }
 
@@ -667,7 +677,7 @@
       waitList.push({ storeNo, storeName: m.name, dept: cs(s.dept), nk, joinDate: jd });
       let mk = jd.getFullYear() + '-' + String(jd.getMonth()+1).padStart(2,'0');
       if (!waitByMonth[mk]) waitByMonth[mk] = { mm: 0, la: 0, th: 0, unk: 0, total: 0 };
-      waitByMonth[mk][nk === 'other' ? 'unk' : nk]++;
+      waitByMonth[mk][NAT_SHORT[nk]]++;
       waitByMonth[mk].total++;
     });
     let waitCount = waitList.length;
