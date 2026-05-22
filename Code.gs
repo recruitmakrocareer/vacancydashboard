@@ -56,7 +56,7 @@ function createHeaderMap(headers) {
  */
 function getDashboardData(forceRefresh = false) {
   const cache = CacheService.getScriptCache();
-  const cacheKey = 'HR_DASHBOARD_DATA_V6'; // v6: เพิ่ม jobFamily field ใน staff
+  const cacheKey = 'HR_DASHBOARD_DATA_V7'; // v7: เพิ่ม result.stores จาก StoreList
 
   if (!forceRefresh) {
     const cachedData = cache.get(cacheKey);
@@ -68,9 +68,36 @@ function getDashboardData(forceRefresh = false) {
 
   Logger.log("⏳ Load data from Spreadsheet (First time or Cache expired)");
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const result = { targets: [], applicants: [], staff: [], parttime: [], error: false };
+  const result = { stores: [], targets: [], applicants: [], staff: [], parttime: [], error: false };
 
   try {
+    // ============================================================
+    // 0. STORELIST (Master รายชื่อสาขาทั้งหมด — primary source ของ store metadata)
+    //    ใช้สำหรับ AEC dashboard / dashboard อื่น ที่ต้องการ map storeNo
+    //    กับ subregion/format โดยไม่พึ่ง Manpower_Status (ซึ่งอาจไม่มีบางสาขา/บางแผนก)
+    // ============================================================
+    const slSheet = ss.getSheetByName('StoreList');
+    if (slSheet) {
+      const data = slSheet.getDataRange().getDisplayValues();
+      const headers = data.shift();
+      const map = createHeaderMap(headers);
+      if (map['storeno'] !== undefined) {
+        data.forEach(r => {
+          if (!r[map['storeno']]) return;
+          let sNo = String(r[map['storeno']]).trim();
+          result.stores.push({
+            storeNo: sNo,
+            storeName: r[map['storename']] || r[map['name']] || '',
+            format: r[map['format']] || '',
+            subregion: r[map['subregion']] !== undefined ? (r[map['subregion']] || '') : (r[map['area']] || ''),
+            od: r[map['od']] || '',
+            regionalCEO: r[map['regionalceo']] || '',
+            storeFocus: r[map['storefocus']] || r[map['focus']] || ''
+          });
+        });
+      }
+    }
+
     // ============================================================
     // 1. MANPOWER_STATUS (รองรับทั้ง Subregion และ Area เพื่อ backward compat)
     // ============================================================
@@ -234,6 +261,6 @@ function getDashboardData(forceRefresh = false) {
  */
 function clearDashboardCache() {
   const cache = CacheService.getScriptCache();
-  ['HR_DASHBOARD_DATA_V3','HR_DASHBOARD_DATA_V4','HR_DASHBOARD_DATA_V5','HR_DASHBOARD_DATA_V6'].forEach(k => cache.remove(k));
+  ['HR_DASHBOARD_DATA_V3','HR_DASHBOARD_DATA_V4','HR_DASHBOARD_DATA_V5','HR_DASHBOARD_DATA_V6','HR_DASHBOARD_DATA_V7'].forEach(k => cache.remove(k));
   return "Cache cleared. Next call will reload from spreadsheet.";
 }

@@ -473,10 +473,18 @@
     let res = typeof payload === 'string' ? JSON.parse(payload) : payload;
     if (res.error) { alert('Error: ' + res.message); $('#loading').hide(); return; }
 
-    // Store meta
-    res.targets.forEach(t => {
+    // Store meta — primary: res.stores (StoreList, all 169 stores)
+    //               fallback: res.targets (Manpower_Status) for old Code.gs versions
+    let storeSrc = (res.stores && res.stores.length) ? res.stores : res.targets;
+    storeSrc.forEach(t => {
       let k = cs(t.storeNo);
-      if (!S.storeMeta[k]) S.storeMeta[k] = { name: t.storeName || '', format: cs(t.format), subregion: cs(t.subregion || t.area || ''), od: cs(t.od), regionalCEO: cs(t.regionalCEO || '') };
+      if (!S.storeMeta[k]) S.storeMeta[k] = {
+        name: t.storeName || '',
+        format: cs(t.format),
+        subregion: cs(t.subregion || t.area || ''),
+        od: cs(t.od),
+        regionalCEO: cs(t.regionalCEO || '')
+      };
     });
 
     S.allStaff = res.staff;
@@ -487,13 +495,14 @@
       return cat === 'AEC' || jf.startsWith('AEC');
     });
 
-    // Populate filters
+    // Populate filters — Format & Subregion from ALL stores (StoreList)
+    //                   Department from actual AEC staff (only AEC-relevant depts)
     let formats = new Set(), depts = new Set(), subs = new Set();
-    S.rawStaff.forEach(s => {
-      let m = S.storeMeta[cs(s.storeNo)];
-      if (m) { if (m.format) formats.add(m.format); if (m.subregion) subs.add(m.subregion); }
-      if (s.dept) depts.add(cs(s.dept));
+    Object.values(S.storeMeta).forEach(m => {
+      if (m.format) formats.add(m.format);
+      if (m.subregion) subs.add(m.subregion);
     });
+    S.rawStaff.forEach(s => { if (s.dept) depts.add(cs(s.dept)); });
     fillSelect('selFormat', [...formats].sort());
     fillSelect('selDept',   [...depts].sort());
     fillSelect('selSubregion', [...subs].sort());
@@ -772,31 +781,58 @@
   function renderTable() {
     let c = S.computed;
     let search = document.getElementById('storeSearch').value.toLowerCase().trim();
-    let arr = Object.entries(c.byStore).map(([k, v]) => {
+    let selFmt = document.getElementById('selFormat').value;
+    let selSub = document.getElementById('selSubregion').value;
+
+    // Iterate ALL stores from StoreList (S.storeMeta), even those without AEC
+    let arr = Object.entries(S.storeMeta).map(([k, m]) => {
+      let v = c.byStore[k] || { mm: 0, la: 0, th: 0, unk: 0 };
       let total = v.mm + v.la + v.th + (v.unk || 0);
       let storeTot = c.storeTotal[k] || 0;
-      return { k, name: v.name, format: v.format, sub: v.sub, mm: v.mm, la: v.la, th: v.th, unk: v.unk || 0, total, storeTot, pct: storeTot > 0 ? (total / storeTot * 100) : 0 };
-    }).sort((a, b) => b.total - a.total);
+      return {
+        k, name: m.name, format: m.format, sub: m.subregion,
+        mm: v.mm, la: v.la, th: v.th, unk: v.unk || 0,
+        total, storeTot, pct: storeTot > 0 ? (total / storeTot * 100) : 0
+      };
+    });
 
-    if (search) arr = arr.filter(x => x.k.toLowerCase().includes(search) || (x.name || '').toLowerCase().includes(search));
+    // Apply filters consistent with chart computation
+    if (selFmt !== 'all') arr = arr.filter(x => x.format === selFmt);
+    if (selSub !== 'all') arr = arr.filter(x => x.sub === selSub);
+    if (search)           arr = arr.filter(x => x.k.toLowerCase().includes(search) || (x.name || '').toLowerCase().includes(search));
+
+    // Sort: stores with AEC first (by total desc), then stores without AEC (by storeNo asc)
+    arr.sort((a, b) => {
+      if (b.total !== a.total) return b.total - a.total;
+      return a.k.localeCompare(b.k, undefined, { numeric: true });
+    });
 
     let maxPct = Math.max(...arr.map(x => x.pct), 0.01);
     let html = '';
-    arr.forEach((x, i) => {
-      let rankCls = i === 0 ? 'rank-num gold' : 'rank-num';
-      html += `<tr>
-        <td><span class="${rankCls}">${i+1}</span></td>
+    let rank = 0;
+    arr.forEach(x => {
+      let zero = x.total === 0;
+      let rowStyle = zero ? ' style="opacity:.55;"' : '';
+      let rankCell;
+      if (zero) {
+        rankCell = '<span style="font-size:.7rem;color:var(--text-muted);">—</span>';
+      } else {
+        rank++;
+        rankCell = `<span class="${rank === 1 ? 'rank-num gold' : 'rank-num'}">${rank}</span>`;
+      }
+      html += `<tr${rowStyle}>
+        <td>${rankCell}</td>
         <td><strong>${x.k}</strong><span style="color:var(--text-muted);font-size:.78rem;margin-left:6px;">${x.name || ''}</span></td>
         <td style="font-size:.78rem;color:var(--text-muted);">${x.sub || '—'}</td>
         <td style="font-size:.78rem;color:var(--text-muted);">${x.format || '—'}</td>
         <td class="num-cell">${fmt(x.storeTot)}</td>
-        <td class="num-cell"><strong>${fmt(x.total)}</strong></td>
+        <td class="num-cell">${zero ? '<span style="color:var(--text-muted);">0</span>' : '<strong>'+fmt(x.total)+'</strong>'}</td>
         <td class="num-cell">${x.mm > 0 ? '<span class="nat-chip mm">'+x.mm+'</span>' : '—'}</td>
         <td class="num-cell">${x.la > 0 ? '<span class="nat-chip la">'+x.la+'</span>' : '—'}</td>
         <td class="num-cell">${x.th > 0 ? '<span class="nat-chip th">'+x.th+'</span>' : '—'}</td>
         <td class="num-cell pct-col">
-          ${x.pct.toFixed(1)}%
-          <div class="bar-mini"><div class="bar-mini-fill" style="width:${(x.pct/maxPct*100).toFixed(1)}%"></div></div>
+          ${zero ? '<span style="color:var(--text-muted);">—</span>' : x.pct.toFixed(1) + '%'}
+          ${zero ? '' : '<div class="bar-mini"><div class="bar-mini-fill" style="width:'+(x.pct/maxPct*100).toFixed(1)+'%"></div></div>'}
         </td>
       </tr>`;
     });
