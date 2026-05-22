@@ -80,7 +80,7 @@
     .content { padding: 24px 28px; }
 
     /* ── KPI STRIP ───────────────────────── */
-    .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; margin-bottom: 22px; }
     .kpi-card { background: #fff; border-radius: var(--radius-md); padding: 18px 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: relative; overflow: hidden; }
     .kpi-card::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--indigo); }
     .kpi-card.myanmar::before { background: var(--myanmar); }
@@ -148,8 +148,12 @@
       .chart-grid.two-one { grid-template-columns: 1fr 1fr; }
     }
 
+    /* ── WAITING SECTION ────────────────────── */
+    .kpi-card.waiting::before { background: var(--amber); }
+
     /* ── RESPONSIVE ──────────────────────── */
-    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 1400px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 900px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .chart-grid.two-one, .chart-grid.three { grid-template-columns: 1fr; } .filter-bar { padding: 12px 16px; } .content { padding: 16px; } .topbar { padding: 0 16px; } }
     @media (max-width: 600px)  { .kpi-value { font-size: 1.5rem; } }
   </style>
@@ -247,6 +251,57 @@
       <div class="kpi-label">Resigns — YTD</div>
       <div class="kpi-value" id="kpiResigns">—</div>
       <div class="kpi-sub" id="kpiTurnoverRate">Turnover rate</div>
+    </div>
+    <div class="kpi-card waiting">
+      <div class="kpi-label">Waiting to Onboard</div>
+      <div class="kpi-value" id="kpiWaiting">—</div>
+      <div class="kpi-sub" id="kpiWaitingSub">กำลังจะเริ่มงาน</div>
+    </div>
+  </div>
+
+  <!-- WAITING TO ONBOARD -->
+  <div id="waitingSection" style="display:none;">
+    <div class="section-label" style="color:var(--amber);">
+      <i class="bi bi-hourglass-split" style="color:var(--amber);"></i>
+      &nbsp;Waiting to Onboard
+      <span id="waitBadge" style="background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.4);color:#b45309;font-size:.7rem;font-weight:700;padding:2px 10px;border-radius:999px;letter-spacing:.4px;margin-left:6px;"></span>
+    </div>
+    <div class="chart-grid two-one" style="margin-bottom:22px;">
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">
+              <span class="icon" style="background:#fffbeb;color:var(--amber);"><i class="bi bi-calendar-week"></i></span>
+              Onboarding Timeline
+            </div>
+            <div class="chart-subtitle">จำนวน AEC ที่กำลังจะเริ่มงาน จำแนกตามเดือน</div>
+          </div>
+          <div class="legend-pills" id="waitLegend"></div>
+        </div>
+        <div class="chart-body"><div style="height:220px"><canvas id="chartWait"></canvas></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head" style="padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:0;">
+          <div class="chart-title">
+            <span class="icon" style="background:#fffbeb;color:var(--amber);"><i class="bi bi-person-lines-fill"></i></span>
+            รายชื่อ
+          </div>
+          <input type="text" id="waitSearch" class="table-search" placeholder="🔍 ค้นหา..." oninput="renderWaiting()">
+        </div>
+        <div class="table-wrap" style="max-height:260px;">
+          <table class="stat-table">
+            <thead>
+              <tr>
+                <th>Store</th>
+                <th>Dept</th>
+                <th>Nationality</th>
+                <th>Join Date</th>
+              </tr>
+            </thead>
+            <tbody id="waitTableBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -379,16 +434,21 @@
   }
 
   function isActiveAt(s, dEnd) {
-    let td = parseDt(s.termDate);
-    // HR_Status is the source of truth for active headcount.
-    // Employees pre-hired (joinDate in the future) are still Active in the system.
-    // Only use joinDate for historical queries when status is not explicitly Active.
+    let jd = parseDt(s.joinDate), td = parseDt(s.termDate);
     let statusActive = cs(s.status).toLowerCase() === 'active';
+    if (!statusActive) return false;
     let notTerm = !td || td > dEnd;
-    if (statusActive) return notTerm;
-    // Fallback: date-based logic for records without explicit Active status
-    let jd = parseDt(s.joinDate);
-    return !!(jd && jd <= dEnd && notTerm);
+    // joinDate must be on or before snapshot date — future-join = Waiting to Onboard
+    let started = jd ? jd <= dEnd : true;
+    return started && notTerm;
+  }
+
+  function isWaitingOnboard(s, dEnd) {
+    let jd = parseDt(s.joinDate), td = parseDt(s.termDate);
+    let statusActive = cs(s.status).toLowerCase() === 'active';
+    if (!statusActive) return false;
+    let notTerm = !td || td > dEnd;
+    return !!(jd && jd > dEnd && notTerm);
   }
 
   function getNatKey(nat) {
@@ -420,7 +480,12 @@
     });
 
     S.allStaff = res.staff;
-    S.rawStaff = res.staff.filter(s => cs(s.empCategory).toUpperCase() === 'AEC');
+    // Primary: empCategory = AEC. Fallback: jobFamily starts with "AEC" (if Code.gs older version)
+    S.rawStaff = res.staff.filter(s => {
+      let cat = cs(s.empCategory).toUpperCase();
+      let jf  = cs(s.jobFamily || '').toUpperCase();
+      return cat === 'AEC' || jf.startsWith('AEC');
+    });
 
     // Populate filters
     let formats = new Set(), depts = new Set(), subs = new Set();
@@ -544,7 +609,24 @@
 
     let totalAll = Object.values(storeTotal).reduce((a, b) => a + b, 0);
 
-    S.computed = { mm, la, th, unk, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, dEnd };
+    // Waiting to Onboard — HR_Status Active but joinDate > dEnd
+    let waitList = [], waitByMonth = {};
+    S.rawStaff.forEach(s => {
+      if (!passFilters(s)) return;
+      if (!isWaitingOnboard(s, dEnd)) return;
+      let storeNo = cs(s.storeNo);
+      let m = S.storeMeta[storeNo] || { name: '-', subregion: '-', format: '-' };
+      let jd = parseDt(s.joinDate);
+      let nk = getNatKey(s.nationality);
+      waitList.push({ storeNo, storeName: m.name, dept: cs(s.dept), nk, joinDate: jd });
+      let mk = jd.getFullYear() + '-' + String(jd.getMonth()+1).padStart(2,'0');
+      if (!waitByMonth[mk]) waitByMonth[mk] = { mm: 0, la: 0, th: 0, unk: 0, total: 0 };
+      waitByMonth[mk][nk === 'other' ? 'unk' : nk]++;
+      waitByMonth[mk].total++;
+    });
+    let waitCount = waitList.length;
+
+    S.computed = { mm, la, th, unk, total, totalAll, hires, resigns, byStore, byDept, byRegion, byMonth, storeTotal, waitList, waitByMonth, waitCount, dEnd };
   }
 
   // ── RENDER ────────────────────────────────────────────────────────────────
@@ -564,7 +646,7 @@
     let tr = (c.hires + c.resigns) > 0 ? ((c.resigns / Math.max(c.total, 1)) * 100).toFixed(1) + '% Turnover Rate (YTD)' : '—';
     $('#kpiTurnoverRate').text(tr);
 
-    renderTrend(); renderNat(); renderDept(); renderRegion(); renderConcentration(); renderTable();
+    renderTrend(); renderNat(); renderDept(); renderRegion(); renderConcentration(); renderTable(); renderWaiting();
   }
 
   function killChart(id) { if (S.charts[id]) { S.charts[id].destroy(); delete S.charts[id]; } }
@@ -616,15 +698,20 @@
   function renderDept() {
     killChart('dept');
     let c = S.computed;
-    let arr = Object.entries(c.byDept).map(([k,v]) => ({ k, total: v.mm+v.la+v.th, mm: v.mm, la: v.la, th: v.th })).sort((a,b) => b.total-a.total);
+    if (!Object.keys(c.byDept).length) return;
+    let arr = Object.entries(c.byDept)
+      .map(([k,v]) => ({ k, total: v.mm+v.la+v.th+(v.unk||0), mm: v.mm, la: v.la, th: v.th, unk: v.unk||0 }))
+      .sort((a,b) => b.total-a.total);
     let ctx = document.getElementById('chartDept').getContext('2d');
+    let datasets = [
+      { label: 'พม่า', data: arr.map(x => x.mm), backgroundColor: COLORS.myanmar, borderRadius: { topLeft:4, topRight:4 } },
+      { label: 'ลาว',  data: arr.map(x => x.la), backgroundColor: COLORS.lao },
+      { label: 'ไทย',  data: arr.map(x => x.th), backgroundColor: COLORS.thai }
+    ];
+    if (arr.some(x => x.unk > 0)) datasets.push({ label: 'ไม่ระบุ', data: arr.map(x => x.unk), backgroundColor: '#94A3B8' });
     S.charts.dept = new Chart(ctx, {
       type: 'bar',
-      data: { labels: arr.map(x => x.k), datasets: [
-        { label: 'พม่า', data: arr.map(x => x.mm), backgroundColor: COLORS.myanmar, borderRadius: { topLeft:4, topRight:4 } },
-        { label: 'ลาว',  data: arr.map(x => x.la), backgroundColor: COLORS.lao },
-        { label: 'ไทย',  data: arr.map(x => x.th), backgroundColor: COLORS.thai }
-      ]},
+      data: { labels: arr.map(x => x.k), datasets },
       options: { responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: true, position: 'top', labels: { font: { size: 10, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } }, datalabels: { display: false } },
         scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 40 } }, y: { stacked: true, beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { precision: 0, font: { size: 10 } } } }
@@ -635,15 +722,20 @@
   function renderRegion() {
     killChart('region');
     let c = S.computed;
-    let arr = Object.entries(c.byRegion).map(([k,v]) => ({ k, total: v.mm+v.la+v.th, mm: v.mm, la: v.la, th: v.th })).sort((a,b) => b.total-a.total);
+    if (!Object.keys(c.byRegion).length) return;
+    let arr = Object.entries(c.byRegion)
+      .map(([k,v]) => ({ k, total: v.mm+v.la+v.th+(v.unk||0), mm: v.mm, la: v.la, th: v.th, unk: v.unk||0 }))
+      .sort((a,b) => b.total-a.total);
     let ctx = document.getElementById('chartRegion').getContext('2d');
+    let datasets = [
+      { label: 'พม่า', data: arr.map(x => x.mm), backgroundColor: COLORS.myanmar, borderRadius: { topLeft:4, topRight:4 } },
+      { label: 'ลาว',  data: arr.map(x => x.la), backgroundColor: COLORS.lao },
+      { label: 'ไทย',  data: arr.map(x => x.th), backgroundColor: COLORS.thai }
+    ];
+    if (arr.some(x => x.unk > 0)) datasets.push({ label: 'ไม่ระบุ', data: arr.map(x => x.unk), backgroundColor: '#94A3B8' });
     S.charts.region = new Chart(ctx, {
       type: 'bar',
-      data: { labels: arr.map(x => x.k), datasets: [
-        { label: 'พม่า', data: arr.map(x => x.mm), backgroundColor: COLORS.myanmar, borderRadius: { topLeft:4, topRight:4 } },
-        { label: 'ลาว',  data: arr.map(x => x.la), backgroundColor: COLORS.lao },
-        { label: 'ไทย',  data: arr.map(x => x.th), backgroundColor: COLORS.thai }
-      ]},
+      data: { labels: arr.map(x => x.k), datasets },
       options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
         plugins: { legend: { display: true, position: 'top', labels: { font: { size: 10, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } }, datalabels: { display: false } },
         scales: { x: { stacked: true, beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { precision: 0, font: { size: 10 } } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } } }
@@ -655,12 +747,14 @@
     killChart('conc');
     let c = S.computed;
     let arr = Object.entries(c.byStore).map(([k, v]) => {
-      let total = v.mm + v.la + v.th;
+      let aec = v.mm + v.la + v.th + (v.unk||0);
       let storeTot = c.storeTotal[k] || 0;
-      let concPct = storeTot > 0 ? (total / storeTot * 100) : 0;
-      return { k, label: k + (v.name ? ' ' + v.name : ''), total, storeTot, concPct };
-    }).sort((a,b) => b.concPct - a.concPct).slice(0, 10);
+      let concPct = storeTot > 0 ? (aec / storeTot * 100) : 0;
+      return { k, label: k + (v.name ? ' ' + v.name : ''), aec, storeTot, concPct };
+    }).filter(x => x.aec > 0).sort((a,b) => b.concPct - a.concPct).slice(0, 10);
 
+    if (!arr.length) return;
+    let maxPct = Math.max(...arr.map(x => x.concPct), 0.1);
     let ctx = document.getElementById('chartConcentration').getContext('2d');
     S.charts.conc = new Chart(ctx, {
       type: 'bar',
@@ -670,7 +764,7 @@
       },
       options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
         plugins: { legend: { display: false }, datalabels: { display: true, anchor: 'end', align: 'end', color: '#334155', font: { size: 10, weight: 700 }, formatter: v => v + '%' } },
-        scales: { x: { beginAtZero: true, max: Math.max(30, Math.ceil((Math.max(...arr.map(x=>x.concPct))||10)/5)*5+5), grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, callback: v => v + '%' } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } }
+        scales: { x: { beginAtZero: true, max: Math.ceil(maxPct / 5) * 5 + 5, grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, callback: v => v + '%' } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } }
       }
     });
   }
@@ -679,9 +773,9 @@
     let c = S.computed;
     let search = document.getElementById('storeSearch').value.toLowerCase().trim();
     let arr = Object.entries(c.byStore).map(([k, v]) => {
-      let total = v.mm + v.la + v.th;
+      let total = v.mm + v.la + v.th + (v.unk || 0);
       let storeTot = c.storeTotal[k] || 0;
-      return { k, name: v.name, format: v.format, sub: v.sub, mm: v.mm, la: v.la, th: v.th, total, storeTot, pct: storeTot > 0 ? (total / storeTot * 100) : 0 };
+      return { k, name: v.name, format: v.format, sub: v.sub, mm: v.mm, la: v.la, th: v.th, unk: v.unk || 0, total, storeTot, pct: storeTot > 0 ? (total / storeTot * 100) : 0 };
     }).sort((a, b) => b.total - a.total);
 
     if (search) arr = arr.filter(x => x.k.toLowerCase().includes(search) || (x.name || '').toLowerCase().includes(search));
@@ -708,6 +802,78 @@
     });
     if (!html) html = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted);font-size:.85rem;">ไม่พบข้อมูล</td></tr>';
     document.getElementById('tableBody').innerHTML = html;
+  }
+
+  function renderWaiting() {
+    let c = S.computed;
+
+    // KPI card
+    $('#kpiWaiting').text(fmt(c.waitCount));
+    $('#kpiWaitingSub').text(c.waitCount > 0 ? 'เตรียมเริ่มงาน' : 'ไม่มีรายการ');
+
+    if (c.waitCount === 0) { $('#waitingSection').hide(); return; }
+    $('#waitingSection').show();
+    $('#waitBadge').text(c.waitCount + ' คน');
+
+    // Timeline chart
+    killChart('wait');
+    let months = Object.keys(c.waitByMonth).sort();
+    let labels = months.map(m => {
+      let [y, mo] = m.split('-');
+      return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1] + " '" + y.slice(2);
+    });
+    let allDatasets = [
+      { label: 'พม่า',    data: months.map(m => c.waitByMonth[m].mm  || 0), backgroundColor: COLORS.myanmar },
+      { label: 'ลาว',     data: months.map(m => c.waitByMonth[m].la  || 0), backgroundColor: COLORS.lao },
+      { label: 'ไทย',     data: months.map(m => c.waitByMonth[m].th  || 0), backgroundColor: COLORS.thai },
+      { label: 'ไม่ระบุ', data: months.map(m => c.waitByMonth[m].unk || 0), backgroundColor: '#94A3B8' }
+    ].filter(ds => ds.data.some(v => v > 0));
+
+    let ctx = document.getElementById('chartWait').getContext('2d');
+    S.charts.wait = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: allDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top', labels: { font: { size: 10, weight: 600 }, usePointStyle: true, pointStyleWidth: 8, boxHeight: 8 } },
+          datalabels: { display: true, anchor: 'end', align: 'end', color: '#334155', font: { size: 10, weight: 700 },
+            formatter: (v, ctx2) => {
+              let sums = ctx2.chart.data.datasets.map(ds => ds.data[ctx2.dataIndex]);
+              let total = sums.reduce((a,b) => a+b, 0);
+              return ctx2.datasetIndex === ctx2.chart.data.datasets.length - 1 && total > 0 ? total : '';
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { stacked: true, beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { precision: 0, font: { size: 10 } } }
+        }
+      }
+    });
+
+    // Detail table
+    let searchEl = document.getElementById('waitSearch');
+    let search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+    let list = [...c.waitList].sort((a, b) => (a.joinDate || 0) - (b.joinDate || 0));
+    if (search) list = list.filter(x =>
+      x.storeNo.toLowerCase().includes(search) ||
+      x.storeName.toLowerCase().includes(search) ||
+      x.dept.toLowerCase().includes(search)
+    );
+
+    const natChip = { myanmar: '<span class="nat-chip mm">พม่า</span>', lao: '<span class="nat-chip la">ลาว</span>', thai: '<span class="nat-chip th">ไทย</span>', other: '<span class="nat-chip" style="background:#f1f5f9;color:#64748b;">ไม่ระบุ</span>' };
+    let html = list.map(x => {
+      let dateStr = x.joinDate ? x.joinDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+      return `<tr>
+        <td><strong>${x.storeNo}</strong><span style="color:var(--text-muted);font-size:.78rem;margin-left:6px;">${x.storeName || ''}</span></td>
+        <td style="font-size:.78rem;color:var(--text-muted);">${x.dept || '—'}</td>
+        <td>${natChip[x.nk] || '—'}</td>
+        <td style="font-size:.78rem;font-weight:700;color:var(--amber);">${dateStr}</td>
+      </tr>`;
+    }).join('');
+    if (!html) html = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:.85rem;">ไม่พบข้อมูล</td></tr>';
+    document.getElementById('waitTableBody').innerHTML = html;
   }
 
   function goMain() {
